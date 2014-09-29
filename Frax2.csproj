@@ -106,6 +106,14 @@
   <ItemGroup>
     <BundleResource Include="Shaders\Shader.fsh" />
     <BundleResource Include="Shaders\Shader.vsh" />
+    <BundleResource Include="Shaders\SetupShader.fsh" />
+    <BundleResource Include="Shaders\IterationShader.fsh" />
+    <BundleResource Include="Shaders\DrawShader.fsh" />
+    <BundleResource Include="Shaders\OffScreenShader.fsh" />
+    <BundleResource Include="Shaders\OffScreenShader.vsh" />
+    <BundleResource Include="Shaders\OnScreenShader.fsh" />
+    <BundleResource Include="Shaders\OnScreenShader.vsh" />
+    <BundleResource Include="Shaders\SetupShader.vsh" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />

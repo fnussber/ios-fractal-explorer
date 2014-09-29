@@ -3,15 +3,17 @@ precision lowp sampler2D;
 
 uniform sampler2D coltx;
 uniform float maxIter;
-
-varying highp vec2 c;
+uniform float scale;
+uniform vec2 trans;
 
 void main()
 {
-    vec2 z = c;
+    vec4 fc = gl_FragCoord * scale;
+    vec2 c = vec2(trans.x + fc.x, trans.y + fc.y);
+    vec2 z = vec2(c.x, c.y);
  
     float i;
-    for (i = 0.0; i <= maxIter; i++) {
+    for (i = 0.0; i < maxIter; i++) {
         vec2 z2 = z * z;
         if((z2.x + z2.y) > 4.0) break;
 

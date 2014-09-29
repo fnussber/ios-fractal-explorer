@@ -1,16 +1,28 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhone" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneDeviceTarget.Flo's iPad" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Shaders/Shader.fsh">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPad2.8.0" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="FracViewController.cs">
     <Files>
-      <File FileName="FracViewController.cs" Line="20" Column="20" />
-      <File FileName="Shaders/Shader.fsh" Line="25" Column="25" />
+      <File FileName="Shaders/Shader.fsh" Line="1" Column="1" />
       <File FileName="Shaders/Shader.vsh" Line="1" Column="1" />
       <File FileName="GLCommon.cs" Line="1" Column="1" />
       <File FileName="GLProgram.cs" Line="1" Column="1" />
+      <File FileName="Shaders/SetupShader.fsh" Line="1" Column="1" />
+      <File FileName="Shaders/IterationShader.fsh" Line="1" Column="1" />
+      <File FileName="Shaders/DrawShader.fsh" Line="1" Column="1" />
+      <File FileName="FracViewController.cs" Line="15" Column="15" />
+      <File FileName="AppDelegate.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="201" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="264" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="266" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="268" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="270" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="246" column="1" />
+      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="271" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>
