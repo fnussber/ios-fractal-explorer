@@ -1,28 +1,25 @@
 ﻿precision highp float;
-precision lowp sampler2D;
 
-uniform sampler2D coltx;
-uniform float maxIter;
-uniform float scale;
-uniform vec2 trans;
+uniform highp sampler2D inValues;
+uniform lowp sampler2D coltx;
+
+varying highp vec2 c0;
 
 void main()
 {
-    vec4 fc = gl_FragCoord * scale;
-    vec2 c = vec2(trans.x + fc.x, trans.y + fc.y);
-    vec2 z = vec2(c.x, c.y);
- 
-    float i;
-    for (i = 0.0; i < maxIter; i++) {
-        vec2 z2 = z * z;
-        if((z2.x + z2.y) > 4.0) break;
+    float maxIter = 64.0;
+    vec4 inVals = texture2D(coltx, vec2(0.3, 0.0));
+    vec2 col = vec2((inVals.z >= maxIter ? 0.0 : float(inVals.z)) / 64.0, 0.0);
 
-        z = vec2(
-        	  z2.x - z2.y,
-        	  2.0 * z.y * z.x
-        	) + c;
-    }
+//    gl_FragColor = texture2D(coltx, col);
 
-    vec2 col = vec2((i >= maxIter ? 0.0 : i) / 100.0, 0);
-    gl_FragColor = texture2D(coltx, col);
+//    if (inVals.x > 0.0) 
+//      gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); //texture2D(coltx, col);
+//    if (inVals.x > 0.25)
+//      gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); //texture2D(coltx, col);
+//    if (inVals.x > 0.5)
+//      gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); //texture2D(coltx, col);
+
+    float vvv =  c0.x; //(inVals.x+1.5)/3.0;
+    gl_FragColor = inVals; //texture2D(coltx, vec2(0.1, 0.0));
 }

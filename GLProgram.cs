@@ -14,10 +14,12 @@ namespace Frax2
 		fragShader;
 
 		List<string> attributes;
+		Dictionary<string, int> uniforms;
 
 		public GLProgram (string vShaderFilename, string fShaderFilename)
 		{
 			attributes = new List<string> ();
+			uniforms = new Dictionary<string, int> ();
 			program = GL.CreateProgram ();
 
 			string vertShaderPathName = vShaderFilename; //NSBundle.MainBundle.PathForResource (vShaderFilename, "vsh");
@@ -54,6 +56,55 @@ namespace Frax2
 			if (!attributes.Contains (attributeName)) {
 				attributes.Add (attributeName);
 				GL.BindAttribLocation (program, attributes.IndexOf (attributeName), attributeName);
+			}
+		}
+
+		public void AddUniform(string uniformName)
+		{
+			if (!uniforms.ContainsKey (uniformName)) {
+				int ix = GL.GetUniformLocation (program, uniformName);
+				uniforms.Add (uniformName, ix);
+			}
+		}
+
+		public void SetUniform(string uniformName, int value)
+		{
+			int ix;
+			if (uniforms.TryGetValue (uniformName, out ix)) {
+				GL.Uniform1 (ix, value);
+			} else {
+				throw new Exception ("Unknown uniform value " + uniformName);
+			}
+		}
+
+		public void SetUniform(string uniformName, float value)
+		{
+			int ix;
+			if (uniforms.TryGetValue (uniformName, out ix)) {
+				GL.Uniform1 (ix, value);
+			} else {
+				throw new Exception ("Unknown uniform value " + uniformName);
+			}
+		}
+
+		public void SetUniform2(string uniformName, float value0, float value1)
+		{
+			int ix;
+			if (uniforms.TryGetValue (uniformName, out ix)) {
+				GL.Uniform2 (ix, value0, value1);
+			} else {
+				throw new Exception ("Unknown uniform value " + uniformName);
+			}
+		}
+
+
+		public void SetUniformMatrix(string uniformName, float[] matrix)
+		{
+			int ix;
+			if (uniforms.TryGetValue (uniformName, out ix)) {
+				GL.UniformMatrix4 (ix, 1, false, matrix);
+			} else {
+				throw new Exception ("Unknown uniform value " + uniformName);
 			}
 		}
 

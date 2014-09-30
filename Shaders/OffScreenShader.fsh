@@ -1,19 +1,22 @@
 ﻿precision highp float;
-precision lowp sampler2D;
 
-uniform sampler2D coltx;
-uniform float maxIter;
-uniform float scale;
-uniform vec2 trans;
+uniform highp sampler2D inValues;
+uniform highp float steps;
+
+varying highp vec2 c0;
 
 void main()
 {
-    vec4 fc = gl_FragCoord * scale;
-    vec2 c = vec2(trans.x + fc.x, trans.y + fc.y);
-    vec2 z = vec2(c.x, c.y);
+	// claim our last result (i.e. current z and iteration count)
+    vec4 inVals = texture2D(inValues, c0);
+
+    // init c and z accordingly
+    vec2 c = inVals.xy;
+    vec2 z = c;
  
+	// calculate the next series of steps
     float i;
-    for (i = 0.0; i < maxIter; i++) {
+    for (i = 0.0; i < steps; i++) {
         vec2 z2 = z * z;
         if((z2.x + z2.y) > 4.0) break;
 
@@ -23,6 +26,8 @@ void main()
         	) + c;
     }
 
-    vec2 col = vec2((i >= maxIter ? 0.0 : i) / 100.0, 0);
-    gl_FragColor = texture2D(coltx, col);
+    // store current z value and iteration count
+    gl_FragColor.xy = z;
+    gl_FragColor.z  = inVals.z + i;
+    gl_FragColor.w  = 0.0;
 }

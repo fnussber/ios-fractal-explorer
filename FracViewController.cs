@@ -16,63 +16,45 @@ namespace Frax2
 	{
 		static uint renderbuffer;
 
-		static readonly float[] squareVertices = {
-			-2.0f, -1.0f,
-			-2.0f,  1.0f,
+		// vertices
+		static readonly float[] vertices = {
+			-1.0f, -1.0f,
+			-1.0f,  1.0f,
 			 1.0f, -1.0f,
-			 1.0f,  1.0f,
+			 1.0f,  1.0f
 		};
-//		static readonly float[] squareTexture = {
-//			0.0f, 0.0f,
-//			1.0f, 0.0f,
-//			1.0f,  1.0f,
-//			0.0f,  1.0f,
-//		};
+		// texture coordinates
+		static readonly float[] textureCoords = {
+			0.0f, 0.0f,
+			0.0f, 1.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f
+		};
+
 
 		// == the programs
 		GLProgram program;
 		GLProgram setupProgram;
-		GLProgram offScreenProgram;
+		GLProgram iterationsProgram;
 		GLProgram onScreenProgram;
 
 		Stopwatch stopwatch = new Stopwatch();
+		uint colorTextureId;
 		uint tex0;
 		uint tex1;
 		uint fob0;
 		uint fob1;
-
-		static int scaleUniformIx;
-		static int transUniformIx;
-		static int maxItUniformIx;
-		static int coltxUniformIx;
-		static int matrixUniformIx;
 
 		static int minIter = 64;
 		static int curIter = 64;
 		static int maxIter = 128;
 
 		static float scaleFactor = 1/256.0f;
-		static float transX = -2.0f;
-		static float transY = -1.0f;
-
-		float[] rotationMatrix = new float[16],
-		translationMatrix = new float[16],
-		modelViewMatrix = new float[16],
-		projectionMatrix = new float[16],
-		matrix = new float[16];
-
-//		static readonly byte[] squareColors = {
-//			255, 255,   0, 255,
-//			0,   255, 255, 255,
-//			0,     0,   0,   0,
-//			255,   0, 255, 255,
-//		};
-
-
+		static float transX = 0.0f;
+		static float transY = 0.0f;
 
 
 		EAGLContext context;
-		EAGLContext context2;
 		GLKView glkView;
 
 		public FracViewController ()
@@ -84,13 +66,10 @@ namespace Frax2
 			base.ViewDidLoad ();
 
 			context = new EAGLContext (EAGLRenderingAPI.OpenGLES2);
-			context2 = new EAGLContext (EAGLRenderingAPI.OpenGLES2, context.ShareGroup);
 			glkView = (GLKView) View;
 			glkView.Context = context;
 			glkView.MultipleTouchEnabled = true;
 			glkView.DrawInRect += Draw;
-			//glkView.Delegate = new MyDelegate ();
-
 
 			PreferredFramesPerSecond = 10;
 //			size = UIScreen.MainScreen.Bounds.Size.ToSize ();
@@ -99,9 +78,12 @@ namespace Frax2
 			AddGestureRecognizers (View);
 
 			/* ** SETUP ** */
-			SetupGL ();
+			EAGLContext.SetCurrentContext (context);
+			GL.Enable (EnableCap.Texture2D);
 
 			SetupFramebuffers (out fob0, out fob1);
+
+			SetupPrograms ();
 		}
 
 		void Draw (object sender, GLKViewDrawEventArgs args)
@@ -109,94 +91,201 @@ namespace Frax2
 
 			stopwatch.Restart ();
 
-//			DrawOffScreen ();
 
-//			if (curIter <= maxIter) {
+			// do it in steps
+			SetupIterations ();
+//			RunIterations ();
+			DrawIterations ();
 
-				program.Use ();
 
-				GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
-				GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			// do it in one go
+//			DrawResult ();
 
-				// set camera
-				UpdatePosition ();
-
-				// setup the geometry.. (check if this can be done once only)
-				GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, squareVertices);
-				GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
-//				GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, squareTexture);
-//				GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
-
-				// adapt parameters as needed
-				GL.Uniform1 (maxItUniformIx, (float)curIter);
-//				GL.Uniform1 (scaleUniformIx, scaleFactor);
-//				GL.Uniform2 (transUniformIx, transX, transY);
-				GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
-
-			//curIter *= 2;
-
-//			}
-
-			System.Console.WriteLine ("Draw on screen in " + stopwatch.ElapsedMilliseconds + "ms");
+			System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void DrawOffScreen ()
+		void SetupIterations ()
 		{
 
 			stopwatch.Restart ();
 
-			EAGLContext.SetCurrentContext (context2);
+		
+			// == SET FRAMEBUFFER AND TEX0 AS OUTPUT FOR THIS STEP
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, fob0);
+			GL.Viewport (0, 0, 768, 1024);
 
-			offScreenProgram.Use ();
+			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			setupProgram.Use ();
+
+			// setup the geometry.. (check if this can be done once only)
+//			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertVertices);
+//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
+//			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+			GL.VertexAttribPointer (0, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray (0);
+			GL.VertexAttribPointer (1, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+			GL.EnableVertexAttribArray (1);
+
+			// bind a texture to the texture register 0
+//			GL.ActiveTexture (TextureUnit.Texture0);
+//			GL.BindTexture (TextureTarget.Texture2D, tex0);
+
+//			GL.ReadPixels(0, 0, 1, 1, PixelFormat.Rgba, PixelType.UnsignedByte, ref data);
+
+
+			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
+
+			System.Console.WriteLine ("Setup Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
+		}
+
+		void RunIterations()
+		{
+			stopwatch.Restart ();
+
+//			EAGLContext.SetCurrentContext (context2);
+
+			iterationsProgram.Use ();
+
+			// == SET FRAMEBUFFER AND TEX1 AS OUTPUT FOR THIS STEP
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, fob1);
 
 			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			// setup the geometry.. (check if this can be done once only)
-			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, squareVertices);
+			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
 			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
-//			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, squareTexture);
-//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
 
-			// adapt parameters as needed
-//			GL.Uniform1 (maxItUniformIx, (float)curIter);
-//			GL.Uniform1 (scaleUniformIx, scaleFactor);
-//			GL.Uniform2 (transUniformIx, transX, transY);
+			// bind a texture to the texture register 0
+//			GL.ActiveTexture (TextureUnit.Texture0);
+//			GL.BindTexture (TextureTarget.Texture2D, tex0);
+
+			iterationsProgram.SetUniform ("inValues", tex0);
+
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
-			GL.Flush ();
+//			GL.Flush (); // needed?
 
-			EAGLContext.SetCurrentContext (context);
+//			EAGLContext.SetCurrentContext (context);
 
-			System.Console.WriteLine ("Draw off screen in " + stopwatch.ElapsedMilliseconds + "ms");
+			System.Console.WriteLine ("Do Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void UpdatePosition ()
+		void DrawIterations()
 		{
-			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
-			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
-			GLCommon.Matrix3DSetTranslation (ref translationMatrix, 0.0f, 0.0f, -3.0f);
-			modelViewMatrix = GLCommon.Matrix3DMultiply (translationMatrix, rotationMatrix);
+			stopwatch.Restart ();
 
-			GLCommon.Matrix3DSetPerspectiveProjectionWithFieldOfView (ref projectionMatrix, 45.0f, 0.1f, 100.0f,
-				View.Frame.Size.Width /
-				View.Frame.Size.Height);
+			glkView.BindDrawable ();
 
-			matrix = GLCommon.Matrix3DMultiply (projectionMatrix, modelViewMatrix);
-			GL.UniformMatrix4 (matrixUniformIx, 1, false, matrix);
+			onScreenProgram.Use ();
 
+			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			// setup the geometry.. (check if this can be done once only)
+			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
+//			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+
+			// activate coloring texture and input texture
+			GL.ActiveTexture (TextureUnit.Texture0);
+			GL.BindTexture (TextureTarget.Texture2D, colorTextureId);
+			GL.ActiveTexture (TextureUnit.Texture1);
+			GL.BindTexture (TextureTarget.Texture2D, tex0);
+
+			onScreenProgram.SetUniform ("coltx", colorTextureId);
+			onScreenProgram.SetUniform ("inValues", tex0);
+
+			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
+
+			System.Console.WriteLine ("Draw Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
+
+		void DrawResult ()
+		{
+
+			stopwatch.Restart ();
+
+			// render to screen
+			glkView.BindDrawable ();
+
+			program.Use ();
+
+			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			// setup the geometry.. (check if this can be done once only)
+			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
+			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+
+			// adapt parameters as needed
+			program.SetUniform ("maxIter", curIter);
+			program.SetUniform ("scale", scaleFactor);
+			program.SetUniform2 ("trans", transX, transY);
+
+			// activate coloring texture
+			GL.ActiveTexture (TextureUnit.Texture0);
+			GL.BindTexture (TextureTarget.Texture2D, colorTextureId);
+
+			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
+
+
+			System.Console.WriteLine ("Draw on screen in " + stopwatch.ElapsedMilliseconds + "ms");
+		}
+
+
+		float[] UpdatePosition ()
+		{
+//			float[] rotationMatrix = new float[16];
+//			float[] translationMatrix = new float[16];
+//			float[] modelViewMatrix = new float[16];
+			float[] projectionMatrix = new float[16];
+
+//			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
+//			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
+//			GLCommon.Matrix3DSetTranslation (ref translationMatrix, 0.0f, 0.0f, -3.0f);
+//			modelViewMatrix = GLCommon.Matrix3DMultiply (translationMatrix, rotationMatrix);
+
+//			GLCommon.Matrix3DSetPerspectiveProjectionWithFieldOfView (ref projectionMatrix, 45.0f, 0.1f, 100.0f,
+//				View.Frame.Size.Width /
+//				View.Frame.Size.Height);
+
+
+			float aspectRation = View.Frame.Size.Width / View.Frame.Size.Height;
+			GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
+			return projectionMatrix;
+		}
+
+//		float[] UpdatePosition ()
+//		{
+//			float[] rotationMatrix = new float[16];
+//			float[] translationMatrix = new float[16];
+//			float[] modelViewMatrix = new float[16];
+//			float[] projectionMatrix = new float[16];
+//
+//			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
+//			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
+//			GLCommon.Matrix3DSetTranslation (ref translationMatrix, 0.0f, 0.0f, -3.0f);
+//			modelViewMatrix = GLCommon.Matrix3DMultiply (translationMatrix, rotationMatrix);
+//
+//			GLCommon.Matrix3DSetPerspectiveProjectionWithFieldOfView (ref projectionMatrix, 45.0f, 0.1f, 100.0f,
+//				View.Frame.Size.Width /
+//				View.Frame.Size.Height);
+//
+//			return GLCommon.Matrix3DMultiply (projectionMatrix, modelViewMatrix);
+//		}
 			
-		void SetupGL ()
+		void SetupPrograms ()
 		{
-//			GL.Enable (EnableCap.DepthTest);
-//			GL.Enable (EnableCap.CullFace);
-//			GL.Enable (EnableCap.Texture2D);
-//			GL.Enable (EnableCap.Blend);
-
-			EAGLContext.SetCurrentContext (context);
-
-			uint textureId = LoadTexture ("Shaders/colorsTexture.png");
+			colorTextureId = LoadTexture ("Shaders/colorsTexture.png");
 
 			// ---------- PROGRAM A0
 			program = new GLProgram ("Shaders/Shader.vsh", "Shaders/Shader.fsh");
@@ -207,12 +296,11 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", program.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", program.VertexShaderLog ()));
 			}
-			coltxUniformIx = program.GetUniformIndex ("coltx");
-			maxItUniformIx = program.GetUniformIndex ("maxIter");
-//			scaleUniformIx = program.GetUniformIndex ("scale");
-//			transUniformIx = program.GetUniformIndex ("trans");
-			matrixUniformIx = program.GetUniformIndex ("matrix");
-			GL.Uniform1 (coltxUniformIx, textureId);
+			program.AddUniform ("coltx");
+			program.AddUniform ("maxIter");
+			program.AddUniform ("scale");
+			program.AddUniform ("trans");
+			program.SetUniform ("coltx", colorTextureId);
 
 			// ---------- PROGRAM A
 			setupProgram = new GLProgram ("Shaders/SetupShader.vsh", "Shaders/SetupShader.fsh");
@@ -223,24 +311,23 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", setupProgram.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", setupProgram.VertexShaderLog ()));
 			}
-//			coltxUniformIx = setupProgram.GetUniformIndex ("coltx");
-//			maxItUniformIx = setupProgram.GetUniformIndex ("maxIter");
-//			scaleUniformIx = setupProgram.GetUniformIndex ("scale");
-//			transUniformIx = setupProgram.GetUniformIndex ("trans");
-//			GL.Uniform1 (coltxUniformIx, textureId);
+			//setupProgram.AddUniform ("matrix");
+//			setupProgram.AddUniform ("coltx");
+//			setupProgram.SetUniform ("coltx", textureId);
 
 			// ---------- PROGRAM B
-			offScreenProgram = new GLProgram ("Shaders/OffScreenShader.vsh", "Shaders/OffScreenShader.fsh");
-			if (!offScreenProgram.Link ()) {
+			iterationsProgram = new GLProgram ("Shaders/OffScreenShader.vsh", "Shaders/OffScreenShader.fsh");
+			if (!iterationsProgram.Link ()) {
 				Console.WriteLine ("Link failed.");
-				Console.WriteLine (String.Format ("Program Log: {0}", offScreenProgram.ProgramLog ()));
-				Console.WriteLine (String.Format ("Fragment Log: {0}", offScreenProgram.FragmentShaderLog ()));
-				Console.WriteLine (String.Format ("Vertex Log: {0}", offScreenProgram.VertexShaderLog ()));
+				Console.WriteLine (String.Format ("Program Log: {0}", iterationsProgram.ProgramLog ()));
+				Console.WriteLine (String.Format ("Fragment Log: {0}", iterationsProgram.FragmentShaderLog ()));
+				Console.WriteLine (String.Format ("Vertex Log: {0}", iterationsProgram.VertexShaderLog ()));
 			}
-			var inValues1Id = offScreenProgram.GetUniformIndex ("inValues");
-			var stepsId = offScreenProgram.GetUniformIndex ("steps");
-			GL.Uniform1 (stepsId, 50);
-			GL.Uniform1 (inValues1Id, tex0);
+			iterationsProgram.AddUniform ("inValues");
+			iterationsProgram.AddUniform ("steps");
+			//iterationsProgram.AddUniform ("matrix");
+			iterationsProgram.SetUniform ("steps", 50);
+			iterationsProgram.SetUniform ("inValues", tex0);
 
 			// ---------- PROGRAM C
 			onScreenProgram = new GLProgram ("Shaders/OnScreenShader.vsh", "Shaders/OnScreenShader.fsh");
@@ -250,11 +337,8 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", onScreenProgram.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", onScreenProgram.VertexShaderLog ()));
 			}
-//			coltxUniformIx = onScreenProgram.GetUniformIndex ("coltx");
-//			maxItUniformIx = onScreenProgram.GetUniformIndex ("maxIter");
-//			scaleUniformIx = onScreenProgram.GetUniformIndex ("scale");
-//			transUniformIx = onScreenProgram.GetUniformIndex ("trans");
-//			GL.Uniform1 (coltxUniformIx, textureId);
+			onScreenProgram.AddUniform ("inValues");
+			onScreenProgram.AddUniform ("coltx");
 		}
 
 		void TeardownGL ()
@@ -269,10 +353,10 @@ namespace Frax2
 			GL.Enable (EnableCap.Texture2D);
 			GL.GenTextures (1, out id);
 			GL.BindTexture (TextureTarget.Texture2D, id);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
 			// set data here if init data is needed..
-			GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, width, height, 0, All.Rgba, All.UnsignedByte, (IntPtr) 0);
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
 			return id;
 		}
 
@@ -286,50 +370,55 @@ namespace Frax2
 //			return id;
 //		}
 //
-//		uint frameBuffer;
-//		uint renderBuffer;
-//		uint depthBuffer;
-//		int backingWidth;
-//		int backingHeight;
-//
-//		void createBuffers ()
-//		{
-//			GL.GenFramebuffers (1, out frameBuffer);
-//			GL.GenRenderbuffers (1, out renderBuffer);
-//			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
-//			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, renderBuffer);
-//			context.RenderBufferStorage ((uint) All.Renderbuffer, (CAEAGLLayer) glkView.Layer);
-//			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, RenderbufferTarget.Renderbuffer, renderBuffer);
-//			GL.GetRenderbufferParameter (RenderbufferTarget.Renderbuffer, RenderbufferParameterName.RenderbufferWidth, out backingWidth);
-//			GL.GetRenderbufferParameter (RenderbufferTarget.Renderbuffer, RenderbufferParameterName.RenderbufferHeight, out backingHeight);
-//
-//			GL.GenRenderbuffers (1, out depthBuffer);
-//			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
-//			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, backingWidth, backingHeight);
-//			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
-//
-//			// sanity check
-//			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
-//				System.Console.WriteLine ("Framebuffer setup failed, sorry.");
-//								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteAttachment)
-//									System.Console.WriteLine ("1");
-//								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteDimensions)
-//									System.Console.WriteLine ("2");
-//								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteMissingAttachment)
-//									System.Console.WriteLine ("3");
-//								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferUnsupported)
-//									System.Console.WriteLine ("4");
-//			}
-//		}
+
+		uint CreateFramebuffer2 (out uint texture, int backingWidth, int backingHeight)
+		{
+			uint frameBuffer;
+//			uint renderBuffer;
+			uint depthBuffer;
+
+			GL.GenFramebuffers (1, out frameBuffer);
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
+
+			GL.GenTextures (1, out texture);
+			GL.BindTexture (TextureTarget.Texture2D, texture);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+			// set data here if init data is needed..
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, backingWidth, backingHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
+
+			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);
 
 
-		static uint CreateFramebuffer(uint inTexture, uint outTexture)
+			GL.GenRenderbuffers (1, out depthBuffer);
+			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
+			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, backingWidth, backingHeight);
+			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
+
+			// sanity check
+			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
+				System.Console.WriteLine ("Framebuffer setup failed, sorry.");
+								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteAttachment)
+									System.Console.WriteLine ("1");
+								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteDimensions)
+									System.Console.WriteLine ("2");
+								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteMissingAttachment)
+									System.Console.WriteLine ("3");
+								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferUnsupported)
+									System.Console.WriteLine ("4");
+			}
+
+			return frameBuffer;
+		}
+
+
+		static uint CreateFramebuffer(uint outTexture)
 		{
 			uint id;
 			GL.GenFramebuffers (1, out id);
 			GL.BindFramebuffer (FramebufferTarget.Framebuffer, id);
-			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, inTexture, 0);
 			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, outTexture, 0);
+			//GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment1, TextureTarget.Texture2D, outTexture, 0);
 
 			// sanity check
 			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
@@ -349,19 +438,19 @@ namespace Frax2
 
 	    void SetupFramebuffers(out uint fob0, out uint fob1)
 		{
-			EAGLContext.SetCurrentContext (context2);
+//			EAGLContext.SetCurrentContext (context2);
 
 			// -- create two textures which server alternatively as the data input/outputs
-			tex0 = CreateTexture (768, 1024);
-			tex1 = CreateTexture (768, 1024);
+//			tex0 = CreateTexture (768, 1024);
+//			tex1 = CreateTexture (768, 1024);
 
 			// -- create two framebuffers two hold the textures
-			fob0 = CreateFramebuffer (tex0, tex1);
-			fob1 = CreateFramebuffer (tex1, tex0);
+			fob0 = CreateFramebuffer2 (out tex0, 768, 1024);
+			fob1 = CreateFramebuffer2 (out tex1, 768, 1024);
 
-			GL.Flush ();
+//			GL.Flush ();
 
-			EAGLContext.SetCurrentContext(context);
+//			EAGLContext.SetCurrentContext(context);
 		}
 
 		// === Textures
