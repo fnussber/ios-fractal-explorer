@@ -376,34 +376,34 @@ namespace Frax2
 		uint CreateFramebuffer2 (out uint texture, int backingWidth, int backingHeight)
 		{
 			uint frameBuffer;
-			uint depthBuffer;
+//			uint depthBuffer;
 
 			GL.GenFramebuffers (1, out frameBuffer);
-			GL.GenRenderbuffers (1, out depthBuffer);
-			GL.GenTextures (1, out texture);
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
 
 			// -- TEXTURE
+			GL.GenTextures (1, out texture);
 			GL.BindTexture (TextureTarget.Texture2D, texture);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
 			// IMPORTANT: Set the wrap mode to clamp or Non-POT (power of two) texture WILL NOT work! 
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 			// set data here if init data is needed..
-			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, backingWidth, backingHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
+//			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, backingWidth, backingHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
+			GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, backingWidth, backingHeight, 0, All.Rgba, All.HalfFloatOes, (IntPtr) 0);
+//			GL.BindTexture (TextureTarget.Texture2D, 0);
 
-			// -- DEPTH BUFFER
-			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
-			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, backingWidth, backingHeight);
+//			// -- DEPTH BUFFER
+//			GL.GenRenderbuffers (1, out depthBuffer);
+//			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
+//			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, backingWidth, backingHeight);
 
-			// -- FRAMEBUFFER
-			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
-
-			// -- ATTACHMENTS
+			// -- ATTACH
 			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);
-			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
-
-			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
+//			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
+//			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, 0);
+			
 
 			// sanity check
 			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
@@ -417,6 +417,8 @@ namespace Frax2
 								if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferUnsupported)
 									System.Console.WriteLine ("4");
 			}
+//			var exten = GL.GetString (All.Extensions);
+//			var error = GL.GetErrorCode ();
 
 //			GL.BindTexture (TextureTarget.Texture2D, 0);
 //			GL.BindFramebuffer (FramebufferTarget.Framebuffer, 0);
