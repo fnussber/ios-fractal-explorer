@@ -114,6 +114,7 @@
     <BundleResource Include="Shaders\OnScreenShader.fsh" />
     <BundleResource Include="Shaders\OnScreenShader.vsh" />
     <BundleResource Include="Shaders\SetupShader.vsh" />
+    <BundleResource Include="Shaders\colorsBlueTexture.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />

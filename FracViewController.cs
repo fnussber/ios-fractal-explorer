@@ -40,6 +40,7 @@ namespace Frax2
 
 		Stopwatch stopwatch = new Stopwatch();
 		uint colorTextureId;
+		uint colorBlueTextureId;
 		uint tex0;
 		uint tex1;
 		uint fob0;
@@ -81,7 +82,10 @@ namespace Frax2
 			EAGLContext.SetCurrentContext (context);
 			GL.Enable (EnableCap.Texture2D);
 
-			SetupFramebuffers (out fob0, out fob1);
+			//SetupFramebuffers (out fob0);
+			fob0 = CreateFramebuffer2 (out tex0, 768, 1024);
+			fob1 = CreateFramebuffer2 (out tex1, 768, 1024);
+
 
 			SetupPrograms ();
 		}
@@ -94,7 +98,7 @@ namespace Frax2
 
 			// do it in steps
 			SetupIterations ();
-//			RunIterations ();
+			RunIterations ();
 			DrawIterations ();
 
 
@@ -145,15 +149,14 @@ namespace Frax2
 		{
 			stopwatch.Restart ();
 
-//			EAGLContext.SetCurrentContext (context2);
-
-			iterationsProgram.Use ();
-
 			// == SET FRAMEBUFFER AND TEX1 AS OUTPUT FOR THIS STEP
 			GL.BindFramebuffer (FramebufferTarget.Framebuffer, fob1);
+			GL.Viewport (0, 0, 768, 1024);
 
 			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			iterationsProgram.Use ();
 
 			// setup the geometry.. (check if this can be done once only)
 			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
@@ -162,16 +165,13 @@ namespace Frax2
 			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
 
 			// bind a texture to the texture register 0
-//			GL.ActiveTexture (TextureUnit.Texture0);
-//			GL.BindTexture (TextureTarget.Texture2D, tex0);
+			GL.ActiveTexture (TextureUnit.Texture0);
+			GL.BindTexture (TextureTarget.Texture2D, tex0);
 
-			iterationsProgram.SetUniform ("inValues", tex0);
+			iterationsProgram.SetUniform ("steps", 64);
+			iterationsProgram.SetUniform ("inValues", 0);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
-
-//			GL.Flush (); // needed?
-
-//			EAGLContext.SetCurrentContext (context);
 
 			System.Console.WriteLine ("Do Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
@@ -197,10 +197,11 @@ namespace Frax2
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, colorTextureId);
 			GL.ActiveTexture (TextureUnit.Texture1);
-			GL.BindTexture (TextureTarget.Texture2D, tex0);
+			GL.BindTexture (TextureTarget.Texture2D, tex1);
 
-			onScreenProgram.SetUniform ("coltx", colorTextureId);
-			onScreenProgram.SetUniform ("inValues", tex0);
+			// assign the texture slot to use to the uniform input params
+			onScreenProgram.SetUniform ("coltx", 0);
+			onScreenProgram.SetUniform ("inValues", 1);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
@@ -286,6 +287,7 @@ namespace Frax2
 		void SetupPrograms ()
 		{
 			colorTextureId = LoadTexture ("Shaders/colorsTexture.png");
+			colorBlueTextureId = LoadTexture ("Shaders/colorsBlueTexture.png");
 
 			// ---------- PROGRAM A0
 			program = new GLProgram ("Shaders/Shader.vsh", "Shaders/Shader.fsh");
@@ -347,18 +349,18 @@ namespace Frax2
 
 		// === Framebuffer
 
-		static uint CreateTexture(int width, int height)
-		{
-			uint id;
-			GL.Enable (EnableCap.Texture2D);
-			GL.GenTextures (1, out id);
-			GL.BindTexture (TextureTarget.Texture2D, id);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
-			// set data here if init data is needed..
-			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
-			return id;
-		}
+//		static uint CreateTexture(int width, int height)
+//		{
+//			uint id;
+//			GL.Enable (EnableCap.Texture2D);
+//			GL.GenTextures (1, out id);
+//			GL.BindTexture (TextureTarget.Texture2D, id);
+//			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
+//			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+//			// set data here if init data is needed..
+//			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
+//			return id;
+//		}
 
 //		uint CreateRenderbuffer()
 //		{
@@ -374,26 +376,34 @@ namespace Frax2
 		uint CreateFramebuffer2 (out uint texture, int backingWidth, int backingHeight)
 		{
 			uint frameBuffer;
-//			uint renderBuffer;
 			uint depthBuffer;
 
 			GL.GenFramebuffers (1, out frameBuffer);
-			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
-
+			GL.GenRenderbuffers (1, out depthBuffer);
 			GL.GenTextures (1, out texture);
+
+			// -- TEXTURE
 			GL.BindTexture (TextureTarget.Texture2D, texture);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+			// IMPORTANT: Set the wrap mode to clamp or Non-POT (power of two) texture WILL NOT work! 
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 			// set data here if init data is needed..
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, backingWidth, backingHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) 0);
 
-			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);
-
-
-			GL.GenRenderbuffers (1, out depthBuffer);
+			// -- DEPTH BUFFER
 			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
 			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, backingWidth, backingHeight);
+
+			// -- FRAMEBUFFER
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
+
+			// -- ATTACHMENTS
+			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);
 			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
+
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
 
 			// sanity check
 			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
@@ -408,50 +418,53 @@ namespace Frax2
 									System.Console.WriteLine ("4");
 			}
 
+//			GL.BindTexture (TextureTarget.Texture2D, 0);
+//			GL.BindFramebuffer (FramebufferTarget.Framebuffer, 0);
+
 			return frameBuffer;
 		}
 
 
-		static uint CreateFramebuffer(uint outTexture)
-		{
-			uint id;
-			GL.GenFramebuffers (1, out id);
-			GL.BindFramebuffer (FramebufferTarget.Framebuffer, id);
-			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, outTexture, 0);
-			//GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment1, TextureTarget.Texture2D, outTexture, 0);
-
-			// sanity check
-			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
-				System.Console.WriteLine ("Framebuffer setup failed, sorry.");
-				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteAttachment)
-				//					System.Console.WriteLine ("1");
-				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteDimensions)
-				//					System.Console.WriteLine ("2");
-				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteMissingAttachment)
-				//					System.Console.WriteLine ("3");
-				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferUnsupported)
-				//					System.Console.WriteLine ("4");
-			}
-
-			return id;
-		}
-
-	    void SetupFramebuffers(out uint fob0, out uint fob1)
-		{
-//			EAGLContext.SetCurrentContext (context2);
-
-			// -- create two textures which server alternatively as the data input/outputs
-//			tex0 = CreateTexture (768, 1024);
-//			tex1 = CreateTexture (768, 1024);
-
-			// -- create two framebuffers two hold the textures
-			fob0 = CreateFramebuffer2 (out tex0, 768, 1024);
-			fob1 = CreateFramebuffer2 (out tex1, 768, 1024);
-
-//			GL.Flush ();
-
-//			EAGLContext.SetCurrentContext(context);
-		}
+//		static uint CreateFramebuffer(uint outTexture)
+//		{
+//			uint id;
+//			GL.GenFramebuffers (1, out id);
+//			GL.BindFramebuffer (FramebufferTarget.Framebuffer, id);
+//			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, outTexture, 0);
+//			//GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment1, TextureTarget.Texture2D, outTexture, 0);
+//
+//			// sanity check
+//			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
+//				System.Console.WriteLine ("Framebuffer setup failed, sorry.");
+//				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteAttachment)
+//				//					System.Console.WriteLine ("1");
+//				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteDimensions)
+//				//					System.Console.WriteLine ("2");
+//				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferIncompleteMissingAttachment)
+//				//					System.Console.WriteLine ("3");
+//				//				if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferUnsupported)
+//				//					System.Console.WriteLine ("4");
+//			}
+//
+//			return id;
+//		}
+//
+//	    void SetupFramebuffers(out uint fob0)
+//		{
+////			EAGLContext.SetCurrentContext (context2);
+//
+//			// -- create two textures which server alternatively as the data input/outputs
+////			tex0 = CreateTexture (768, 1024);
+////			tex1 = CreateTexture (768, 1024);
+//
+//			// -- create two framebuffers two hold the textures
+//			fob0 = CreateFramebuffer2 (out tex0, 768, 1024);
+////			fob1 = CreateFramebuffer2 (out tex1, 768, 1024);
+//
+////			GL.Flush ();
+//
+////			EAGLContext.SetCurrentContext(context);
+//		}
 
 		// === Textures
 
@@ -481,6 +494,8 @@ namespace Frax2
 
 					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
 					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 
 					// generate the OpenGL texture
 					GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, image.Width, image.Height, 0,

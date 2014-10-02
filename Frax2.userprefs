@@ -1,30 +1,23 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPad2.8.0" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Shaders/Shader.fsh">
+  <MonoDevelop.Ide.Workbench ActiveDocument="FracViewController.cs">
     <Files>
-      <File FileName="Shaders/Shader.fsh" Line="6" Column="6" />
-      <File FileName="Shaders/Shader.vsh" Line="1" Column="1" />
+      <File FileName="FracViewController.cs" Line="4" Column="4" />
+      <File FileName="Shaders/Shader.vsh" Line="26" Column="26" />
+      <File FileName="GLProgram.cs" Line="18" Column="18" />
       <File FileName="GLCommon.cs" Line="1" Column="1" />
-      <File FileName="GLProgram.cs" Line="19" Column="19" />
-      <File FileName="Shaders/SetupShader.fsh" Line="1" Column="1" />
-      <File FileName="Shaders/IterationShader.fsh" Line="54" Column="54" />
-      <File FileName="Shaders/DrawShader.fsh" Line="1" Column="1" />
-      <File FileName="FracViewController.cs" Line="34" Column="34" />
-      <File FileName="AppDelegate.cs" Line="1" Column="1" />
-      <File FileName="Shaders/OffScreenShader.fsh" Line="54" Column="54" />
-      <File FileName="Shaders/OffScreenShader.vsh" Line="23" Column="23" />
-      <File FileName="Shaders/SetupShader.vsh" Line="26" Column="26" />
+      <File FileName="Shaders/Shader.fsh" Line="5" Column="5" />
+      <File FileName="Shaders/SetupShader.vsh" Line="1" Column="1" />
+      <File FileName="Shaders/SetupShader.fsh" Line="40" Column="40" />
+      <File FileName="Shaders/OffScreenShader.vsh" Line="1" Column="1" />
+      <File FileName="Shaders/OffScreenShader.fsh" Line="24" Column="24" />
+      <File FileName="Shaders/OnScreenShader.vsh" Line="1" Column="1" />
+      <File FileName="Shaders/OnScreenShader.fsh" Line="34" Column="34" />
+      <File FileName="Shaders/IterationShader.fsh" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore>
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="315" column="1" />
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="317" column="1" />
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="319" column="1" />
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="321" column="1" />
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="297" column="1" />
-      <Breakpoint file="/Users/fnussber/Projects/Frax2/FracViewController.cs" line="322" column="1" />
-    </BreakpointStore>
+    <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

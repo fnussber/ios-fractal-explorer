@@ -27,7 +27,10 @@ void main()
     }
 
     // store current z value and iteration count
-    gl_FragColor.xy = z;
-    gl_FragColor.z  = inVals.z + i;
-    gl_FragColor.w  = 0.0;
+//    gl_FragColor.xy = z;
+//    gl_FragColor.z  = inVals.z + i;
+//    gl_FragColor.w  = 1.0;
+
+    gl_FragColor = vec4(1.0,0.0,1.5,1.0);
+
 }
