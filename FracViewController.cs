@@ -46,11 +46,12 @@ namespace Frax2
 		uint fob0;
 		uint fob1;
 
-		static int minIter = 64;
-		static int curIter = 64;
-		static int maxIter = 128;
+		static int pass = 0;
+		static float curIter = 0.0f;
+		static float steps = 64.0f;
+		static float maxIter = 256.0f;
 
-		static float scaleFactor = 1/256.0f;
+		static float scaleFactor = 1.0f;
 		static float transX = 0.0f;
 		static float transY = 0.0f;
 
@@ -93,20 +94,29 @@ namespace Frax2
 		void Draw (object sender, GLKViewDrawEventArgs args)
 		{
 
-			stopwatch.Restart ();
+			if (curIter < maxIter) {
+				stopwatch.Restart ();
 
-			float[] matrix = UpdatePosition ();
+				float[] matrix = UpdatePosition ();
 
-			// do it in steps
-			SetupIterations (matrix);
-			RunIterations (matrix);
-			DrawIterations (matrix);
+				if (curIter == 0.0f) {
+					pass = 0;
+					SetupIterations (matrix);
+				}
 
+				var fob = pass % 2 == 0 ? fob1 : fob0;
+				var tex = pass % 2 == 0 ? tex0 : tex1;
+				RunIterations (matrix, fob, tex);
 
-			// do it in one go
-//			DrawResult ();
+				curIter += steps;
+				pass++;
 
-			System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
+				var outTex = pass % 2 == 0 ? tex0 : tex1;
+				DrawIterations (matrix, outTex);
+
+				System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
+			}
+
 		}
 
 		void SetupIterations (float[] matrix)
@@ -148,12 +158,12 @@ namespace Frax2
 			System.Console.WriteLine ("Setup Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void RunIterations(float[] matrix)
+		void RunIterations(float[] matrix, uint fob, uint tex)
 		{
 			stopwatch.Restart ();
 
 			// == SET FRAMEBUFFER AND TEX1 AS OUTPUT FOR THIS STEP
-			GL.BindFramebuffer (FramebufferTarget.Framebuffer, fob1);
+			GL.BindFramebuffer (FramebufferTarget.Framebuffer, fob);
 			GL.Viewport (0, 0, 768, 1024);
 
 			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
@@ -171,9 +181,9 @@ namespace Frax2
 
 			// bind a texture to the texture register 0
 			GL.ActiveTexture (TextureUnit.Texture0);
-			GL.BindTexture (TextureTarget.Texture2D, tex0);
+			GL.BindTexture (TextureTarget.Texture2D, tex);
 
-			iterationsProgram.SetUniform ("steps", 64);
+			iterationsProgram.SetUniform ("iterations", steps);
 			iterationsProgram.SetUniform ("inValues", 0);
 			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
@@ -182,7 +192,7 @@ namespace Frax2
 			System.Console.WriteLine ("Do Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void DrawIterations(float[] matrix)
+		void DrawIterations(float[] matrix, uint tex)
 		{
 			stopwatch.Restart ();
 
@@ -205,9 +215,10 @@ namespace Frax2
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, colorTextureId);
 			GL.ActiveTexture (TextureUnit.Texture1);
-			GL.BindTexture (TextureTarget.Texture2D, tex1);
+			GL.BindTexture (TextureTarget.Texture2D, tex);
 
 			// assign the texture slot to use to the uniform input params
+			onScreenProgram.SetUniform ("iterations", curIter);
 			onScreenProgram.SetUniform ("coltx", 0);
 			onScreenProgram.SetUniform ("inValues", 1);
 			onScreenProgram.SetUniformMatrix ("matrix", matrix);
@@ -254,10 +265,10 @@ namespace Frax2
 
 		float[] UpdatePosition ()
 		{
-//			float[] rotationMatrix = new float[16];
-//			float[] translationMatrix = new float[16];
-//			float[] modelViewMatrix = new float[16];
-			float[] projectionMatrix = new float[16];
+			float[] rotationMatrix = new float[16];
+			float[] translationMatrix = new float[16];
+			float[] scaleMatrix = new float[16];
+			float[] matrix;
 
 //			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
 //			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
@@ -273,8 +284,13 @@ namespace Frax2
 			//GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
 			//return projectionMatrix;
 
-			GLCommon.Matrix3DSetIdentity (ref projectionMatrix);
-			return projectionMatrix;
+			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
+			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
+			GLCommon.Matrix3DSetUniformScaling (ref scaleMatrix, scaleFactor);
+			GLCommon.Matrix3DSetTranslation (ref translationMatrix, transX, transY, 0.0f);
+			matrix = GLCommon.Matrix3DMultiply (scaleMatrix, rotationMatrix);
+			matrix = GLCommon.Matrix3DMultiply (translationMatrix, matrix);
+			return matrix;
 
 		}
 
@@ -340,8 +356,7 @@ namespace Frax2
 			}
 			iterationsProgram.AddUniform ("matrix");
 			iterationsProgram.AddUniform ("inValues");
-			iterationsProgram.AddUniform ("steps");
-			iterationsProgram.SetUniform ("steps", 50);
+			iterationsProgram.AddUniform ("iterations");
 			iterationsProgram.SetUniform ("inValues", tex0);
 
 			// ---------- PROGRAM C
@@ -354,6 +369,7 @@ namespace Frax2
 			}
 			onScreenProgram.AddUniform ("matrix");
 			onScreenProgram.AddUniform ("inValues");
+			onScreenProgram.AddUniform ("iterations");
 			onScreenProgram.AddUniform ("coltx");
 		}
 
@@ -551,9 +567,9 @@ namespace Frax2
 			var image = gestureRecognizer.View;
 			if (gestureRecognizer.State == UIGestureRecognizerState.Began || gestureRecognizer.State == UIGestureRecognizerState.Changed) {
 				var translation = gestureRecognizer.TranslationInView (View);
-				transX -= translation.X * scaleFactor;
-				transY += translation.Y * scaleFactor;
-				curIter = minIter;
+				transX -= (translation.X/View.Bounds.Width*1.5f) * scaleFactor;
+				transY += (translation.Y/View.Bounds.Height*1.5f) * scaleFactor;
+				curIter = 0.0f;
 				// Reset the gesture recognizer's translation to {0, 0} - the next callback will get a delta from the current position.
 				gestureRecognizer.SetTranslation (PointF.Empty, image);
 
@@ -568,9 +584,9 @@ namespace Frax2
 				var loc = gestureRecognizer.LocationInView (View);
 				var oldScaleFactor = scaleFactor;
 				scaleFactor /= gestureRecognizer.Scale;
-				curIter = minIter;
-				transX += loc.X*(oldScaleFactor - scaleFactor);;
-				transY += (View.Frame.Height - loc.Y)*(oldScaleFactor - scaleFactor);
+				curIter = 0.0f;
+				//transX += loc.X*(oldScaleFactor - scaleFactor);;
+				//transY += (View.Frame.Height - loc.Y)*(oldScaleFactor - scaleFactor);
 				// Reset the gesture recognizer's scale - the next callback will get a delta from the current scale.
 				gestureRecognizer.Scale = 1;
 				System.Console.WriteLine ("Pinching: (scale)=" + gestureRecognizer.Scale);

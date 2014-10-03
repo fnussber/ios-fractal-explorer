@@ -1,7 +1,7 @@
 ﻿precision highp float;
 
 uniform highp sampler2D inValues;
-uniform highp float steps;
+uniform highp float iterations;
 
 varying highp vec2 c0;
 varying highp vec2 t0;
@@ -16,7 +16,7 @@ void main()
  
 	// calculate the next series of steps
     float i;
-    for (i = 0.0; i < 64.0; i++) {
+    for (i = 0.0; i < iterations; i++) {
         vec2 z2 = z * z;
         if((z2.x + z2.y) > 4.0) break;
 
