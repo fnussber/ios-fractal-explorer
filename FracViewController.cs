@@ -95,11 +95,12 @@ namespace Frax2
 
 			stopwatch.Restart ();
 
+			float[] matrix = UpdatePosition ();
 
 			// do it in steps
-			SetupIterations ();
-			RunIterations ();
-			DrawIterations ();
+			SetupIterations (matrix);
+			RunIterations (matrix);
+			DrawIterations (matrix);
 
 
 			// do it in one go
@@ -108,7 +109,7 @@ namespace Frax2
 			System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void SetupIterations ()
+		void SetupIterations (float[] matrix)
 		{
 
 			stopwatch.Restart ();
@@ -133,6 +134,8 @@ namespace Frax2
 			GL.VertexAttribPointer (1, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
 			GL.EnableVertexAttribArray (1);
 
+			setupProgram.SetUniformMatrix ("matrix", matrix);
+
 			// bind a texture to the texture register 0
 //			GL.ActiveTexture (TextureUnit.Texture0);
 //			GL.BindTexture (TextureTarget.Texture2D, tex0);
@@ -145,7 +148,7 @@ namespace Frax2
 			System.Console.WriteLine ("Setup Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void RunIterations()
+		void RunIterations(float[] matrix)
 		{
 			stopwatch.Restart ();
 
@@ -159,10 +162,12 @@ namespace Frax2
 			iterationsProgram.Use ();
 
 			// setup the geometry.. (check if this can be done once only)
-			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
-			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
-			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
-			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+			int attrPosition = GL.GetAttribLocation (iterationsProgram.Id(), "position");
+			int attrTexture  = GL.GetAttribLocation (iterationsProgram.Id(), "texture");
+			GL.VertexAttribPointer (attrPosition, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray (attrPosition);
+			GL.VertexAttribPointer (attrTexture, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+			GL.EnableVertexAttribArray (attrTexture);
 
 			// bind a texture to the texture register 0
 			GL.ActiveTexture (TextureUnit.Texture0);
@@ -170,13 +175,14 @@ namespace Frax2
 
 			iterationsProgram.SetUniform ("steps", 64);
 			iterationsProgram.SetUniform ("inValues", 0);
+			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
 			System.Console.WriteLine ("Do Iterations in " + stopwatch.ElapsedMilliseconds + "ms");
 		}
 
-		void DrawIterations()
+		void DrawIterations(float[] matrix)
 		{
 			stopwatch.Restart ();
 
@@ -188,10 +194,12 @@ namespace Frax2
 			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			// setup the geometry.. (check if this can be done once only)
-			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
-			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
-//			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
-//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+			int attrPosition = GL.GetAttribLocation (onScreenProgram.Id(), "position");
+			int attrTexture  = GL.GetAttribLocation (onScreenProgram.Id(), "texture");
+			GL.VertexAttribPointer (attrPosition, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray (attrPosition);
+			GL.VertexAttribPointer (attrTexture, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+			GL.EnableVertexAttribArray (attrTexture);
 
 			// activate coloring texture and input texture
 			GL.ActiveTexture (TextureUnit.Texture0);
@@ -202,6 +210,7 @@ namespace Frax2
 			// assign the texture slot to use to the uniform input params
 			onScreenProgram.SetUniform ("coltx", 0);
 			onScreenProgram.SetUniform ("inValues", 1);
+			onScreenProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
@@ -224,8 +233,8 @@ namespace Frax2
 			// setup the geometry.. (check if this can be done once only)
 			GL.VertexAttribPointer ((int) GLKVertexAttrib.Position, 2, VertexAttribPointerType.Float, false, 0, vertices);
 			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.Position);
-			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
-			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
+//			GL.VertexAttribPointer ((int) GLKVertexAttrib.TexCoord0, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
+//			GL.EnableVertexAttribArray ((int) GLKVertexAttrib.TexCoord0);
 
 			// adapt parameters as needed
 			program.SetUniform ("maxIter", curIter);
@@ -260,9 +269,13 @@ namespace Frax2
 //				View.Frame.Size.Height);
 
 
-			float aspectRation = View.Frame.Size.Width / View.Frame.Size.Height;
-			GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
+			//float aspectRation = View.Frame.Size.Width / View.Frame.Size.Height;
+			//GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
+			//return projectionMatrix;
+
+			GLCommon.Matrix3DSetIdentity (ref projectionMatrix);
 			return projectionMatrix;
+
 		}
 
 //		float[] UpdatePosition ()
@@ -313,7 +326,7 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", setupProgram.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", setupProgram.VertexShaderLog ()));
 			}
-			//setupProgram.AddUniform ("matrix");
+			setupProgram.AddUniform ("matrix");
 //			setupProgram.AddUniform ("coltx");
 //			setupProgram.SetUniform ("coltx", textureId);
 
@@ -325,9 +338,9 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", iterationsProgram.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", iterationsProgram.VertexShaderLog ()));
 			}
+			iterationsProgram.AddUniform ("matrix");
 			iterationsProgram.AddUniform ("inValues");
 			iterationsProgram.AddUniform ("steps");
-			//iterationsProgram.AddUniform ("matrix");
 			iterationsProgram.SetUniform ("steps", 50);
 			iterationsProgram.SetUniform ("inValues", tex0);
 
@@ -339,6 +352,7 @@ namespace Frax2
 				Console.WriteLine (String.Format ("Fragment Log: {0}", onScreenProgram.FragmentShaderLog ()));
 				Console.WriteLine (String.Format ("Vertex Log: {0}", onScreenProgram.VertexShaderLog ()));
 			}
+			onScreenProgram.AddUniform ("matrix");
 			onScreenProgram.AddUniform ("inValues");
 			onScreenProgram.AddUniform ("coltx");
 		}

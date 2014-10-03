@@ -34,6 +34,11 @@ namespace Frax2
 			GL.AttachShader (program, fragShader);
 		}
 
+		public int Id()
+		{
+			return program;
+		}
+
 		bool compileShader (ref int shader, ShaderType type, string file)
 		{
 			int status;

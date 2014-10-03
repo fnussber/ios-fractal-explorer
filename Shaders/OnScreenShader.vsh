@@ -1,11 +1,14 @@
-﻿precision highp float;
+﻿attribute vec4 position;
+attribute vec2 texture;
 
-attribute vec4 position;
+uniform highp mat4 matrix;
 
 varying highp vec2 c0;
+varying highp vec2 t0;
 
 void main()
 {
   c0 = position.xy;
+  t0 = texture.xy;
   gl_Position = position;
 }

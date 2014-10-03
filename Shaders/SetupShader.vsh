@@ -1,8 +1,11 @@
 ﻿attribute vec4 position;
-varying highp vec2 c;
+
+uniform highp mat4 matrix;
+
+varying highp vec2 c0;
 
 void main()
 {
-  c = position.xy;
+  c0 = position.xy;
   gl_Position = position;
 }
