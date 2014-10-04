@@ -38,6 +38,9 @@ namespace Frax2
 		GLProgram iterationsProgram;
 		GLProgram onScreenProgram;
 
+		NumberLabel reLabel;
+		NumberLabel imLabel;
+
 		Stopwatch stopwatch = new Stopwatch();
 		uint colorTextureId;
 		uint colorBlueTextureId;
@@ -89,6 +92,33 @@ namespace Frax2
 
 
 			SetupPrograms ();
+
+			// some additional UI elements
+			imLabel = new NumberLabel("Im=", 0.0f, new RectangleF (0, 20, 200, 20));
+			reLabel = new NumberLabel("Re=", 0.0f, new RectangleF (0, 40, 200, 20));
+
+			View.AddSubview (imLabel);
+			View.AddSubview (reLabel);
+		}
+
+		class NumberLabel : UILabel
+		{
+			private String prefix;
+
+			public NumberLabel(String prefix, float value, RectangleF frame) 
+			{
+				this.prefix = prefix;
+				Frame = frame;
+				TextColor = UIColor.White;
+				ShadowColor = UIColor.Black;
+				Font = UIFont.FromName ("HelveticaNeue-Bold", 20);
+				setText(value);
+			}
+
+			public void setText(float value)
+			{
+				Text = prefix + value.ToString ("F10");
+			}
 		}
 
 		void Draw (object sender, GLKViewDrawEventArgs args)
@@ -98,6 +128,7 @@ namespace Frax2
 				stopwatch.Restart ();
 
 				float[] matrix = UpdatePosition ();
+				UpdateLabels (matrix);
 
 				if (curIter == 0.0f) {
 					pass = 0;
@@ -294,6 +325,16 @@ namespace Frax2
 
 		}
 
+		void UpdateLabels (float[] matrix)
+		{
+			var upperLeft = GLCommon.MatrixVectorMultiply (matrix, new float[4] { -1.0f, 1.0f, 0.0f, 1.0f });
+			var lowerRight = GLCommon.MatrixVectorMultiply (matrix, new float[4] { 1.0f, -1.0f, 0.0f, 1.0f });
+
+			reLabel.setText ((upperLeft [0] + lowerRight [0]) / 2.0f);
+			imLabel.setText ((upperLeft [1] + lowerRight [1]) / 2.0f);
+		}
+
+
 //		float[] UpdatePosition ()
 //		{
 //			float[] rotationMatrix = new float[16];
@@ -406,7 +447,7 @@ namespace Frax2
 		uint CreateFramebuffer2 (out uint texture, int backingWidth, int backingHeight)
 		{
 			uint frameBuffer;
-//			uint depthBuffer;
+			uint depthBuffer;
 
 			GL.GenFramebuffers (1, out frameBuffer);
 			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
@@ -432,8 +473,7 @@ namespace Frax2
 			// -- ATTACH
 			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);
 //			GL.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferSlot.DepthAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
-//			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, 0);
-			
+
 
 			// sanity check
 			if (GL.CheckFramebufferStatus (FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) {
