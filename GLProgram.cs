@@ -123,7 +123,7 @@ namespace Frax2
 			return GL.GetUniformLocation (program, uniformName);
 		}
 
-		public bool Link ()
+		public void Link ()
 		{
 			int status = 0;
 
@@ -131,13 +131,16 @@ namespace Frax2
 			GL.ValidateProgram (program);
 
 			GL.GetProgram (program, ProgramParameter.LinkStatus, out status);
-			if (status == (int) All.False)
-				return false;
+			if (status == (int)All.False) {
+				Console.WriteLine ("Link failed.");
+				Console.WriteLine (String.Format ("Program Log: {0}", ProgramLog ()));
+				Console.WriteLine (String.Format ("Fragment Log: {0}", FragmentShaderLog ()));
+				Console.WriteLine (String.Format ("Vertex Log: {0}", VertexShaderLog ()));
+				return;
+			}
 
 			GL.DeleteShader (vertShader);
 			GL.DeleteShader (fragShader);
-
-			return true;
 		}
 
 		public void Use ()

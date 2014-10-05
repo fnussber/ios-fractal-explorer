@@ -101,11 +101,10 @@
     <Compile Include="GLCommon.cs" />
     <Compile Include="GLProgram.cs" />
     <Compile Include="ShaderProgram.cs" />
+    <Compile Include="GLFramebuffer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.MonoTouch.CSharp.targets" />
   <ItemGroup>
-    <BundleResource Include="Shaders\Shader.fsh" />
-    <BundleResource Include="Shaders\Shader.vsh" />
     <BundleResource Include="Shaders\SetupShader.fsh" />
     <BundleResource Include="Shaders\IterationShader.fsh" />
     <BundleResource Include="Shaders\DrawShader.fsh" />
@@ -115,6 +114,8 @@
     <BundleResource Include="Shaders\OnScreenShader.vsh" />
     <BundleResource Include="Shaders\SetupShader.vsh" />
     <BundleResource Include="Shaders\colorsBlueTexture.png" />
+    <BundleResource Include="Shaders\ApproxShader.vsh" />
+    <BundleResource Include="Shaders\ApproxShader.fsh" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />
