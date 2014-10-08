@@ -40,6 +40,7 @@ namespace Frax2
 		NumberLabel reLabel;
 		NumberLabel imLabel;
 		NumberLabel scaleLabel;
+		NumberLabel iterationsLabel;
 
 		Stopwatch stopwatch = new Stopwatch();
 		uint colorTextureId;
@@ -59,6 +60,7 @@ namespace Frax2
 		static float transY = 0.0f;
 		static float rotation = 0.0f; // in radians
 
+		Toolbar toolbar;
 
 		EAGLContext context;
 		GLKView glkView;
@@ -70,6 +72,8 @@ namespace Frax2
 		public override void ViewDidLoad ()
 		{
 			base.ViewDidLoad ();
+
+			Settings.SetupByPreferences ();
 
 			context = new EAGLContext (EAGLRenderingAPI.OpenGLES2);
 			glkView = (GLKView) View;
@@ -98,10 +102,33 @@ namespace Frax2
 			reLabel 	  = new NumberLabel("Re=", 0.0f, new RectangleF (10, 15, 200, 15));
 			imLabel       = new NumberLabel("Im=", 0.0f, new RectangleF (10, 30, 200, 15));
 			scaleLabel    = new NumberLabel("x=", 0.0f, new RectangleF (10, 45, 200, 15));
+			iterationsLabel = new NumberLabel ("iterations=", 0.0f, new RectangleF (10, 60, 200, 15));
 
 			View.AddSubview (reLabel);
 			View.AddSubview (imLabel);
 			View.AddSubview (scaleLabel);
+			View.AddSubview (iterationsLabel);
+
+//			toolbar = new Toolbar (View.Frame);
+//			View.AddSubview (toolbar);
+
+//			var settingsUI = new SettingsUI ();
+//			UIWindow window = new UIWindow (UIScreen.MainScreen.Bounds);
+//			window.MakeKeyAndVisible ();
+//			window.RootViewController = settingsUI.navigation;
+//			View.AddSubview (window);
+
+		}
+
+		public override void DidRotate(UIInterfaceOrientation fromInterfaceOrientation)
+		{
+			base.DidRotate(fromInterfaceOrientation);
+
+			// TODO: release framebuffer resources!
+
+			fBufferApprox = new GLFramebuffer (View.Frame.Width / 4.0f, View.Frame.Height / 4.0f);
+			fBuffer0      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
+			fBuffer1      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
 		}
 
 		class NumberLabel : UILabel
@@ -324,6 +351,7 @@ namespace Frax2
 			reLabel.setText ((upperLeft [0] + lowerRight [0]) / 2.0f);
 			imLabel.setText ((upperLeft [1] + lowerRight [1]) / 2.0f);
 			scaleLabel.setText (2.0f / (lowerRight [0] - upperLeft [0]));
+			iterationsLabel.setText (curIter);
 		}
 
 
@@ -468,6 +496,29 @@ namespace Frax2
 			}
 		}
 
+		public class Toolbar : UIToolbar {
+
+			public UIBarButtonItem barBtn;
+
+			public Toolbar(RectangleF rect)
+			{
+				barBtn = new UIBarButtonItem (new UIImage("timer-32.png"), UIBarButtonItemStyle.Plain, ClickAction);
+					
+				Frame = new RectangleF(0, rect.Bottom - 44, rect.Width, 44); 
+				Items = new UIBarButtonItem[] {barBtn};
+
+			}
+
+			void ClickAction(object o, EventArgs EventArgs) {
+				Console.WriteLine ("Button clicked");
+				var settingsUI = new SettingsUI ();
+				UIPopoverController popover = new UIPopoverController (settingsUI.navigation);
+				popover.PopoverContentSize = new SizeF (400, 600);
+				popover.PresentFromBarButtonItem (barBtn, UIPopoverArrowDirection.Any, true);
+			}
+
+		}
 	}
+
 }
 

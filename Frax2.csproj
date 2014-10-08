@@ -85,6 +85,7 @@
     <Reference Include="System.Core" />
     <Reference Include="monotouch" />
     <Reference Include="OpenTK-1.0" />
+    <Reference Include="MonoTouch.Dialog-1" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
@@ -102,6 +103,7 @@
     <Compile Include="GLProgram.cs" />
     <Compile Include="ShaderProgram.cs" />
     <Compile Include="GLFramebuffer.cs" />
+    <Compile Include="Settings.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.MonoTouch.CSharp.targets" />
   <ItemGroup>
@@ -116,8 +118,12 @@
     <BundleResource Include="Shaders\colorsBlueTexture.png" />
     <BundleResource Include="Shaders\ApproxShader.vsh" />
     <BundleResource Include="Shaders\ApproxShader.fsh" />
+    <BundleResource Include="Resources\timer-32.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />
+    <Content Include="Settings.plist">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
