@@ -12,16 +12,19 @@ varying highp vec2 t0;
 void main()
 {
     vec4 inVals = texture2D(inValues, t0);
-
+    vec4 approxz = texture2D(approx, t0);
 
     // check if done
-    //vec4 approxz = texture2D(approx, t0);
-    //vec2 z1 = c0 + approxz.xy;
-    //vec2 z2 = z1 * z1;
-    //float z = (((z2.x + z2.y) > 4.0) || inVals.z > approxz.z) ? inVals.z : approxz.z;
+    float z;
+    if (inVals.w == 0.0) {
+    	// this point is fully evaluated
+    	z = inVals.z;
+    } else if (inVals.z > approxz.z) {
+        z = inVals.z >= curIterations ? maxIterations : inVals.z;
+    } else {
+		z = approxz.z >= maxIterations/3.0 ? maxIterations : approxz.z;
+	}
 
-    //float z = approxz.z;
-    float z = inVals.z;
 
     // fun crazy coloring A
 //    if (inVals.z < maxIterations) {
@@ -33,9 +36,11 @@ void main()
 //    	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 //    }
 
-    if (z < curIterations) {
+//    float z = inVals.z;
+    if (z < maxIterations) {
     	gl_FragColor = texture2D(coltx, vec2(z / 100.0, 0.0));
     } else {
     	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
+
 }

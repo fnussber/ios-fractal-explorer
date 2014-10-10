@@ -53,7 +53,7 @@ namespace Frax2
 
 		static int pass = 0;
 		static float curIter = 0.0f;
-		static float steps = 32.0f;
+		static float steps = 8.0f;
 		static float maxIter = 1024.0f;
 
 		static float scaleFactor = 1.0f;
@@ -140,7 +140,7 @@ namespace Frax2
 
 			// create new framebuffers with appropriate dimensions
 			float oversampling = 1.0f;
-			float approxsampling = 0.25f;
+			float approxsampling = 0.125f;
 			fBuffer0Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
 			fBuffer1Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
 			fBuffer0      = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
@@ -222,8 +222,8 @@ namespace Frax2
 			// calculate
 			fBuffer1Approx.Use ();
 
-			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
-			GL.Clear (ClearBufferMask.ColorBufferBit);
+//			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+//			GL.Clear (ClearBufferMask.ColorBufferBit);
 
 			iterationsProgram.Use ();
 			int attrPosition = GL.GetAttribLocation (iterationsProgram.Id(), "position");
@@ -237,7 +237,8 @@ namespace Frax2
 			GL.ActiveTexture (TextureUnit.Texture0);
 			GL.BindTexture (TextureTarget.Texture2D, fBuffer0Approx.TextureId);
 
-			iterationsProgram.SetUniform ("iterations", 500);
+			// low resulotion but full iteration count!
+			iterationsProgram.SetUniform ("iterations", maxIter/3);
 			iterationsProgram.SetUniform ("inValues", 0);
 			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
