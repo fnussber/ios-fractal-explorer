@@ -32,8 +32,15 @@ namespace Frax2
 			GL.Clear (ClearBufferMask.ColorBufferBit);
 		}
 
+		public void Delete()
+		{
+			// TODO: do we need to delete textures separately or are they deleted together with framebuffer?
+			GL.DeleteFramebuffers (1, ref frameBuffer);
+		}
+
 		private void init()
 		{
+
 			GL.GenFramebuffers (1, out frameBuffer);
 			GL.BindFramebuffer (FramebufferTarget.Framebuffer, frameBuffer);
 
@@ -46,11 +53,13 @@ namespace Frax2
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 			GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, (int)width, (int)height, 0, All.Rgba, All.HalfFloatOes, (IntPtr) 0);
+			//https://www.khronos.org/registry/gles/extensions/OES/OES_texture_float.txt
+//			GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, (int)width, (int)height, 0, All.Rgba, (All) 0x8D61, (IntPtr) 0);
 
 //			// -- DEPTH BUFFER
 //			GL.GenRenderbuffers (1, out depthBuffer);
 //			GL.BindRenderbuffer (RenderbufferTarget.Renderbuffer, depthBuffer);
-//			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, width, height);
+//			GL.RenderbufferStorage (RenderbufferTarget.Renderbuffer, RenderbufferInternalFormat.DepthComponent16, (int)width, (int)height);
 
 			// -- ATTACH
 			GL.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferSlot.ColorAttachment0, TextureTarget.Texture2D, texture, 0);

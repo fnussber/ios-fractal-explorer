@@ -46,14 +46,15 @@ namespace Frax2
 		uint colorTextureId;
 		uint colorBlueTextureId;
 
-		GLFramebuffer fBufferApprox;
-		GLFramebuffer fBuffer0;
-		GLFramebuffer fBuffer1;
+		GLFramebuffer fBuffer0Approx = null;
+		GLFramebuffer fBuffer1Approx = null;
+		GLFramebuffer fBuffer0 = null;
+		GLFramebuffer fBuffer1 = null;
 
 		static int pass = 0;
 		static float curIter = 0.0f;
-		static float steps = 64.0f;
-		static float maxIter = 256.0f;
+		static float steps = 32.0f;
+		static float maxIter = 1024.0f;
 
 		static float scaleFactor = 1.0f;
 		static float transX = 0.0f;
@@ -81,7 +82,7 @@ namespace Frax2
 			glkView.MultipleTouchEnabled = true;
 			glkView.DrawInRect += Draw;
 
-			PreferredFramesPerSecond = 10;
+			PreferredFramesPerSecond = 20;
 //			size = UIScreen.MainScreen.Bounds.Size.ToSize ();
 //			View.ContentScaleFactor = UIScreen.MainScreen.Scale;
 
@@ -92,17 +93,16 @@ namespace Frax2
 			GL.Enable (EnableCap.Texture2D);
 
 			// SetupFramebuffers
-			fBufferApprox = new GLFramebuffer (View.Frame.Width / 4.0f, View.Frame.Height / 4.0f);
-			fBuffer0      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
-			fBuffer1      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
+			ResetImage ();
+			ResetPosition ();
 
 			SetupPrograms ();
 
 			// some additional UI elements
 			reLabel 	  = new NumberLabel("Re=", 0.0f, new RectangleF (10, 15, 200, 15));
 			imLabel       = new NumberLabel("Im=", 0.0f, new RectangleF (10, 30, 200, 15));
-			scaleLabel    = new NumberLabel("x=", 0.0f, new RectangleF (10, 45, 200, 15));
-			iterationsLabel = new NumberLabel ("iterations=", 0.0f, new RectangleF (10, 60, 200, 15));
+			scaleLabel    = new NumberLabel("x=", 0.0f, new RectangleF (10, 45, 200, 15), "F1");
+			iterationsLabel = new NumberLabel ("iterations=", 0.0f, new RectangleF (10, 60, 200, 15), "F0");
 
 			View.AddSubview (reLabel);
 			View.AddSubview (imLabel);
@@ -123,19 +123,39 @@ namespace Frax2
 		public override void DidRotate(UIInterfaceOrientation fromInterfaceOrientation)
 		{
 			base.DidRotate(fromInterfaceOrientation);
+			ResetImage ();
+		}
 
-			// TODO: release framebuffer resources!
+		void ResetImage()
+		{
+			// delete existing framebuffers (if any)
+			if (fBuffer0Approx != null)
+				fBuffer0Approx.Delete();
+			if (fBuffer1Approx != null)
+				fBuffer1Approx.Delete();
+			if (fBuffer0 != null)
+				fBuffer0.Delete();
+			if (fBuffer1 != null)
+				fBuffer1.Delete();
 
-			fBufferApprox = new GLFramebuffer (View.Frame.Width / 4.0f, View.Frame.Height / 4.0f);
-			fBuffer0      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
-			fBuffer1      = new GLFramebuffer (View.Frame.Width, View.Frame.Height);
+			// create new framebuffers with appropriate dimensions
+			float oversampling = 1.0f;
+			float approxsampling = 0.25f;
+			fBuffer0Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
+			fBuffer1Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
+			fBuffer0      = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
+			fBuffer1      = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
+
+			// reset iterations
+			curIter = 0.0f;
 		}
 
 		class NumberLabel : UILabel
 		{
 			private String prefix;
+			private String format;
 
-			public NumberLabel(String prefix, float value, RectangleF frame) 
+			public NumberLabel(String prefix, float value, RectangleF frame, String format = "F10") 
 			{
 				this.prefix = prefix;
 				Frame = frame;
@@ -147,7 +167,7 @@ namespace Frax2
 
 			public void setText(float value)
 			{
-				Text = prefix + value.ToString ("F10");
+				Text = prefix + value.ToString (format);
 			}
 		}
 
@@ -162,6 +182,7 @@ namespace Frax2
 
 				if (curIter == 0.0f) {
 					pass = 0;
+					SetupApproximation (matrix);
 					SetupIterations (matrix);
 				}
 
@@ -186,16 +207,24 @@ namespace Frax2
 		void SetupApproximation (float[] matrix)
 		{
 			// reset
-			fBufferApprox.Use ();
+			fBuffer0Approx.Use ();
+
+			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit);
+
 			setupProgram.Use ();
-			GL.VertexAttribPointer (0, 2, VertexAttribPointerType.Float, false, 0, vertices);
-			GL.EnableVertexAttribArray (0);
-			GL.VertexAttribPointer (1, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
-			GL.EnableVertexAttribArray (1);
+			int attrPosition0 = GL.GetAttribLocation (setupProgram.Id(), "position");
+			GL.VertexAttribPointer (attrPosition0, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray (attrPosition0);
 			setupProgram.SetUniformMatrix ("matrix", matrix);
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
 			// calculate
+			fBuffer1Approx.Use ();
+
+			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
+			GL.Clear (ClearBufferMask.ColorBufferBit);
+
 			iterationsProgram.Use ();
 			int attrPosition = GL.GetAttribLocation (iterationsProgram.Id(), "position");
 			int attrTexture  = GL.GetAttribLocation (iterationsProgram.Id(), "texture");
@@ -206,9 +235,9 @@ namespace Frax2
 
 			// bind a texture to the texture register 0
 			GL.ActiveTexture (TextureUnit.Texture0);
-			GL.BindTexture (TextureTarget.Texture2D, fBufferApprox.TextureId);
+			GL.BindTexture (TextureTarget.Texture2D, fBuffer0Approx.TextureId);
 
-			iterationsProgram.SetUniform ("iterations", steps);
+			iterationsProgram.SetUniform ("iterations", 500);
 			iterationsProgram.SetUniform ("inValues", 0);
 			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
@@ -226,10 +255,9 @@ namespace Frax2
 			setupProgram.Use ();
 
 			// setup the geometry.. (check if this can be done once only)
-			GL.VertexAttribPointer (0, 2, VertexAttribPointerType.Float, false, 0, vertices);
-			GL.EnableVertexAttribArray (0);
-			GL.VertexAttribPointer (1, 2, VertexAttribPointerType.Float, false, 0, textureCoords);
-			GL.EnableVertexAttribArray (1);
+			int attrPosition = GL.GetAttribLocation (setupProgram.Id(), "position");
+			GL.VertexAttribPointer (attrPosition, 2, VertexAttribPointerType.Float, false, 0, vertices);
+			GL.EnableVertexAttribArray (attrPosition);
 
 			setupProgram.SetUniformMatrix ("matrix", matrix);
 
@@ -277,7 +305,7 @@ namespace Frax2
 			onScreenProgram.Use ();
 
 			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
-			GL.Clear (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GL.Clear (ClearBufferMask.ColorBufferBit);
 
 			// setup the geometry.. (check if this can be done once only)
 			int attrPosition = GL.GetAttribLocation (onScreenProgram.Id(), "position");
@@ -292,11 +320,15 @@ namespace Frax2
 			GL.BindTexture (TextureTarget.Texture2D, colorTextureId);
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture (TextureTarget.Texture2D, fobIn.TextureId);
+			GL.ActiveTexture (TextureUnit.Texture2);
+			GL.BindTexture (TextureTarget.Texture2D, fBuffer1Approx.TextureId);
 
 			// assign the texture slot to use to the uniform input params
-			onScreenProgram.SetUniform ("iterations", curIter);
+			onScreenProgram.SetUniform ("maxIterations", maxIter);
+			onScreenProgram.SetUniform ("curIterations", curIter);
 			onScreenProgram.SetUniform ("coltx", 0);
 			onScreenProgram.SetUniform ("inValues", 1);
+			onScreenProgram.SetUniform ("approx", 2);
 			onScreenProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
@@ -306,8 +338,10 @@ namespace Frax2
 			
 		void ResetPosition ()
 		{
-			scaleFactor = 1.0f;
-			transX = 0.0f;
+			// make mid point of screen = (-0.5, 0.0) and width cover the range [-2.5,1.5]
+			// this will resize everything in such a way that the whole Mandelbrot set is visible
+			scaleFactor = 2.0f; // * View.Frame.Width / View.Frame.Height;
+			transX = -0.5f;
 			transY = 0.0f;
 			rotation = 0.0f; // in radians
 		}
@@ -327,17 +361,16 @@ namespace Frax2
 //			GLCommon.Matrix3DSetPerspectiveProjectionWithFieldOfView (ref projectionMatrix, 45.0f, 0.1f, 100.0f,
 //				View.Frame.Size.Width /
 //				View.Frame.Size.Height);
-
-
-			//float aspectRation = View.Frame.Size.Width / View.Frame.Size.Height;
 			//GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
 			//return projectionMatrix;
 
+
+			float aspectRatio = View.Frame.Size.Width / View.Frame.Size.Height;
 			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
 			GLCommon.Matrix3DSetRotationByRadians (ref rotationMatrix, rotation, ref rotationVector);
-			GLCommon.Matrix3DSetUniformScaling (ref scaleMatrix, scaleFactor);
+			GLCommon.Matrix3DSetScaling (ref scaleMatrix, scaleFactor * aspectRatio, scaleFactor, 1.0f);
 			GLCommon.Matrix3DSetTranslation (ref translationMatrix, transX, transY, 0.0f);
-			matrix = GLCommon.Matrix3DMultiply (scaleMatrix, rotationMatrix);
+			matrix = GLCommon.Matrix3DMultiply (rotationMatrix, scaleMatrix);
 			matrix = GLCommon.Matrix3DMultiply (translationMatrix, matrix);
 			return matrix;
 
@@ -378,8 +411,10 @@ namespace Frax2
 			onScreenProgram.Link ();
 			onScreenProgram.AddUniform ("matrix");
 			onScreenProgram.AddUniform ("inValues");
-			onScreenProgram.AddUniform ("iterations");
+			onScreenProgram.AddUniform ("maxIterations");
+			onScreenProgram.AddUniform ("curIterations");
 			onScreenProgram.AddUniform ("coltx");
+			onScreenProgram.AddUniform ("approx");
 		}
 
 
@@ -409,10 +444,10 @@ namespace Frax2
 					// let OpenGL know we're dealing with this image id
 					GL.BindTexture(TextureTarget.Texture2D, id);
 
-					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
-					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
-					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
-					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Linear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.Repeat);
+					GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.Repeat);
 
 					// generate the OpenGL texture
 					GL.TexImage2D(All.Texture2D, 0, (int) All.Rgba, image.Width, image.Height, 0,
@@ -442,8 +477,8 @@ namespace Frax2
 			panGesture.MaximumNumberOfTouches = 2;
 			image.AddGestureRecognizer (panGesture);
 
-			var longPressGesture = new UILongPressGestureRecognizer (ResetImage);
-			image.AddGestureRecognizer (longPressGesture);
+			//var longPressGesture = new UILongPressGestureRecognizer (ResetImage);
+			//image.AddGestureRecognizer (longPressGesture);
 		}
 
 		void ResetImage (UILongPressGestureRecognizer gesture) 

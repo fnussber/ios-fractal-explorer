@@ -108,16 +108,12 @@
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.MonoTouch.CSharp.targets" />
   <ItemGroup>
     <BundleResource Include="Shaders\SetupShader.fsh" />
-    <BundleResource Include="Shaders\IterationShader.fsh" />
-    <BundleResource Include="Shaders\DrawShader.fsh" />
     <BundleResource Include="Shaders\OffScreenShader.fsh" />
     <BundleResource Include="Shaders\OffScreenShader.vsh" />
     <BundleResource Include="Shaders\OnScreenShader.fsh" />
     <BundleResource Include="Shaders\OnScreenShader.vsh" />
     <BundleResource Include="Shaders\SetupShader.vsh" />
     <BundleResource Include="Shaders\colorsBlueTexture.png" />
-    <BundleResource Include="Shaders\ApproxShader.vsh" />
-    <BundleResource Include="Shaders\ApproxShader.fsh" />
     <BundleResource Include="Resources\timer-32.png" />
   </ItemGroup>
   <ItemGroup>

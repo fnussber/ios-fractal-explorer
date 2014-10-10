@@ -1,6 +1,6 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPad2.8.0" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="FracViewController.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Shaders/OffScreenShader.fsh">
     <Files>
       <File FileName="FracViewController.cs" Line="1" Column="1" />
       <File FileName="GLProgram.cs" Line="1" Column="1" />
@@ -8,19 +8,11 @@
       <File FileName="Shaders/SetupShader.vsh" Line="1" Column="1" />
       <File FileName="Shaders/SetupShader.fsh" Line="1" Column="1" />
       <File FileName="Shaders/OffScreenShader.vsh" Line="1" Column="1" />
-      <File FileName="Shaders/OffScreenShader.fsh" Line="1" Column="1" />
+      <File FileName="Shaders/OffScreenShader.fsh" Line="10" Column="10" />
+      <File FileName="Shaders/ApproxShader.fsh" Line="1" Column="1" />
       <File FileName="Shaders/OnScreenShader.vsh" Line="1" Column="1" />
-      <File FileName="Shaders/OnScreenShader.fsh" Line="1" Column="1" />
-      <File FileName="Shaders/IterationShader.fsh" Line="1" Column="1" />
-      <File FileName="Shaders/DrawShader.fsh" Line="1" Column="1" />
-      <File FileName="GLFramebuffer.cs" Line="1" Column="1" />
-      <File FileName="../RadioClock/RadioClock/RadioClockViewController.cs" Line="1" Column="1" />
-      <File FileName="../RadioClock/RadioClock/AppDelegate.cs" Line="1" Column="1" />
-      <File FileName="../RadioClock/RadioClock/RadioClockViewController.designer.cs" Line="1" Column="1" />
-      <File FileName="Info.plist" />
-      <File FileName="Main.cs" Line="1" Column="1" />
-      <File FileName="Settings.cs" Line="17" Column="17" />
-      <File FileName="Settings.plist" />
+      <File FileName="Shaders/OnScreenShader.fsh" Line="20" Column="20" />
+      <File FileName="GLFramebuffer.cs" Line="3" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
