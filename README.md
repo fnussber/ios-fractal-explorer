@@ -10,7 +10,7 @@ Nevertheless this was a good example to do some OpenGL GPU programming using the
 
 ## Demo Video
 
-See a demo video on youtube: http://youtu.be/NVUj5CVOuwY
+See a demo video on [youtube](http://youtu.be/NVUj5CVOuwY).
 
 ## Credits
-Some of the more general OpenGL functionality (like matrix manipulations) is based on this code: https://github.com/xamarin/monotouch-samples/tree/master/OpenGL/OpenGLES20Example
+Some of the more general OpenGL functionality (like matrix manipulations) is based on this [code](https://github.com/xamarin/monotouch-samples/tree/master/OpenGL/OpenGLES20Example).
