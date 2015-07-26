@@ -5,7 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Frax2
+namespace Fractals
 {
 	public class GLProgram
 	{

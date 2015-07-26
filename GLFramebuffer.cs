@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenTK.Graphics.ES20;
 
-namespace Frax2
+namespace Fractals
 {
 	public class GLFramebuffer
 	{

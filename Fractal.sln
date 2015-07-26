@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frax2", "Frax2.csproj", "{EF738C62-1AE6-4DED-8EB5-6D9113B789C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fractal", "Fractal.csproj", "{EF738C62-1AE6-4DED-8EB5-6D9113B789C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,8 +25,5 @@ Global
 		{EF738C62-1AE6-4DED-8EB5-6D9113B789C5}.Release|iPhone.Build.0 = Release|iPhone
 		{EF738C62-1AE6-4DED-8EB5-6D9113B789C5}.Release|iPhoneSimulator.ActiveCfg = Release|iPhoneSimulator
 		{EF738C62-1AE6-4DED-8EB5-6D9113B789C5}.Release|iPhoneSimulator.Build.0 = Release|iPhoneSimulator
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Frax2.csproj
 	EndGlobalSection
 EndGlobal

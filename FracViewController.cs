@@ -1,21 +1,20 @@
-﻿using System;
+﻿using MonoTouch.CoreAnimation;
+using MonoTouch.CoreGraphics;
+using MonoTouch.Foundation;
 using MonoTouch.GLKit;
 using MonoTouch.OpenGLES;
-using System.Drawing;
-using OpenTK.Graphics.ES20;
-using System.Diagnostics;
 using MonoTouch.UIKit;
 using OpenTK;
-using MonoTouch.CoreGraphics;
+using OpenTK.Graphics.ES20;
+using System;
+using System.Drawing;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using MonoTouch.CoreAnimation;
 
-namespace Frax2
+namespace Fractals
 {
 	public class FracViewController : GLKViewController
 	{
-		static uint renderbuffer;
-
 		// vertices
 		static readonly float[] vertices = {
 			-1.0f, -1.0f,
@@ -51,17 +50,14 @@ namespace Frax2
 		GLFramebuffer fBuffer0 = null;
 		GLFramebuffer fBuffer1 = null;
 
-		static int pass = 0;
+		static int   pass    = 0;
 		static float curIter = 0.0f;
-		static float steps = 8.0f;
-		static float maxIter = 1024.0f;
+		static float steps   = 10.0f;
+		static float maxIter = 1000.0f;
 
 		static float scaleFactor = 1.0f;
-		static float transX = 0.0f;
-		static float transY = 0.0f;
-		static float rotation = 0.0f; // in radians
-
-		Toolbar toolbar;
+		static float transX      = 0.0f;
+		static float transY      = 0.0f;
 
 		EAGLContext context;
 		GLKView glkView;
@@ -74,17 +70,14 @@ namespace Frax2
 		{
 			base.ViewDidLoad ();
 
-			Settings.SetupByPreferences ();
-
+			// Unfortunately my poor old iPad2 only supports OpenGL ES2.0 :(
 			context = new EAGLContext (EAGLRenderingAPI.OpenGLES2);
 			glkView = (GLKView) View;
 			glkView.Context = context;
 			glkView.MultipleTouchEnabled = true;
 			glkView.DrawInRect += Draw;
 
-			PreferredFramesPerSecond = 20;
-//			size = UIScreen.MainScreen.Bounds.Size.ToSize ();
-//			View.ContentScaleFactor = UIScreen.MainScreen.Scale;
+			PreferredFramesPerSecond = 60;
 
 			AddGestureRecognizers (View);
 
@@ -98,31 +91,19 @@ namespace Frax2
 
 			SetupPrograms ();
 
-			// some additional UI elements
-			reLabel 	  = new NumberLabel("Re=", 0.0f, new RectangleF (10, 15, 200, 15));
-			imLabel       = new NumberLabel("Im=", 0.0f, new RectangleF (10, 30, 200, 15));
-			scaleLabel    = new NumberLabel("x=", 0.0f, new RectangleF (10, 45, 200, 15), "F1");
-			iterationsLabel = new NumberLabel ("iterations=", 0.0f, new RectangleF (10, 60, 200, 15), "F0");
+			// labels that show some information regarding position, zoom factor and iterations calculated
+			reLabel 	    = new NumberLabel ("Center Real      = ", 0.0f, new RectangleF (10, 15, 300, 15));
+			imLabel         = new NumberLabel ("Center Imaginary = ", 0.0f, new RectangleF (10, 35, 300, 15));
+			scaleLabel      = new NumberLabel ("Scale Factor     = ", 0.0f, new RectangleF (10, 55, 300, 15), "F1");
+			iterationsLabel = new NumberLabel ("Iterations       = ", 0.0f, new RectangleF (10, 75, 300, 15), "F0");
 
-			View.AddSubview (reLabel);
-			View.AddSubview (imLabel);
-			View.AddSubview (scaleLabel);
-			View.AddSubview (iterationsLabel);
-
-//			toolbar = new Toolbar (View.Frame);
-//			View.AddSubview (toolbar);
-
-//			var settingsUI = new SettingsUI ();
-//			UIWindow window = new UIWindow (UIScreen.MainScreen.Bounds);
-//			window.MakeKeyAndVisible ();
-//			window.RootViewController = settingsUI.navigation;
-//			View.AddSubview (window);
+			View.AddSubviews (reLabel, imLabel, scaleLabel, iterationsLabel);
 
 		}
 
 		public override void DidRotate(UIInterfaceOrientation fromInterfaceOrientation)
 		{
-			base.DidRotate(fromInterfaceOrientation);
+			base.DidRotate (fromInterfaceOrientation);
 			ResetImage ();
 		}
 
@@ -143,8 +124,8 @@ namespace Frax2
 			float approxsampling = 0.125f;
 			fBuffer0Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
 			fBuffer1Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
-			fBuffer0      = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
-			fBuffer1      = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
+			fBuffer0       = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
+			fBuffer1       = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
 
 			// reset iterations
 			curIter = 0.0f;
@@ -161,7 +142,7 @@ namespace Frax2
 				Frame = frame;
 				TextColor = UIColor.White;
 				ShadowColor = UIColor.Black;
-				Font = UIFont.FromName ("HelveticaNeue-Bold", 15);
+				Font = UIFont.FromName ("CourierNewPS-BoldMT", 16);
 				setText(value);
 			}
 
@@ -178,7 +159,6 @@ namespace Frax2
 				stopwatch.Restart ();
 
 				float[] matrix = UpdatePosition ();
-				UpdateLabels (matrix);
 
 				if (curIter == 0.0f) {
 					pass = 0;
@@ -198,6 +178,8 @@ namespace Frax2
 					DrawIterations (matrix, fBuffer0);
 				else
 					DrawIterations (matrix, fBuffer1);
+
+				UpdateLabels (matrix);
 
 				System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
 			}
@@ -341,38 +323,21 @@ namespace Frax2
 		{
 			// make mid point of screen = (-0.5, 0.0) and width cover the range [-2.5,1.5]
 			// this will resize everything in such a way that the whole Mandelbrot set is visible
-			scaleFactor = 2.0f; // * View.Frame.Width / View.Frame.Height;
-			transX = -0.5f;
-			transY = 0.0f;
-			rotation = 0.0f; // in radians
+			scaleFactor =  2.0f;
+			transX      = -0.5f;
+			transY      =  0.0f;
 		}
 
 		float[] UpdatePosition ()
 		{
-			float[] rotationMatrix = new float[16];
 			float[] translationMatrix = new float[16];
 			float[] scaleMatrix = new float[16];
 			float[] matrix;
 
-//			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
-//			GLCommon.Matrix3DSetRotationByDegrees (ref rotationMatrix, 0.0f, rotationVector);
-//			GLCommon.Matrix3DSetTranslation (ref translationMatrix, 0.0f, 0.0f, -3.0f);
-//			modelViewMatrix = GLCommon.Matrix3DMultiply (translationMatrix, rotationMatrix);
-
-//			GLCommon.Matrix3DSetPerspectiveProjectionWithFieldOfView (ref projectionMatrix, 45.0f, 0.1f, 100.0f,
-//				View.Frame.Size.Width /
-//				View.Frame.Size.Height);
-			//GLCommon.Matrix3DSetOrthoProjection (ref projectionMatrix, -aspectRation, aspectRation, -1.0f, 1.0f, -1.0f, 1.0f);
-			//return projectionMatrix;
-
-
 			float aspectRatio = View.Frame.Size.Width / View.Frame.Size.Height;
-			Vector3 rotationVector = new Vector3 (1.0f, 1.0f, 1.0f);
-			GLCommon.Matrix3DSetRotationByRadians (ref rotationMatrix, rotation, ref rotationVector);
 			GLCommon.Matrix3DSetScaling (ref scaleMatrix, scaleFactor * aspectRatio, scaleFactor, 1.0f);
 			GLCommon.Matrix3DSetTranslation (ref translationMatrix, transX, transY, 0.0f);
-			matrix = GLCommon.Matrix3DMultiply (rotationMatrix, scaleMatrix);
-			matrix = GLCommon.Matrix3DMultiply (translationMatrix, matrix);
+			matrix = GLCommon.Matrix3DMultiply (translationMatrix, scaleMatrix);
 			return matrix;
 
 		}
@@ -391,23 +356,23 @@ namespace Frax2
 
 		void SetupPrograms ()
 		{
-			colorTextureId = LoadTexture ("Shaders/colorsTexture.png");
+			colorTextureId     = LoadTexture ("Shaders/colorsTexture.png");
 			colorBlueTextureId = LoadTexture ("Shaders/colorsBlueTexture.png");
 
-			// ---------- PROGRAM A
+			// ---------- Program for first pass: set everything up
 			setupProgram = new GLProgram ("Shaders/SetupShader.vsh", "Shaders/SetupShader.fsh");
 			//program.AddAttribute ("position");
 			setupProgram.Link ();
 			setupProgram.AddUniform ("matrix");
 
-			// ---------- PROGRAM B
+			// ---------- Program for repeating passes that does calculations and stores results in a texture
 			iterationsProgram = new GLProgram ("Shaders/OffScreenShader.vsh", "Shaders/OffScreenShader.fsh");
 			iterationsProgram.Link ();
 			iterationsProgram.AddUniform ("matrix");
 			iterationsProgram.AddUniform ("inValues");
 			iterationsProgram.AddUniform ("iterations");
 
-			// ---------- PROGRAM C
+			// ---------- Program for drawing the current result texture
 			onScreenProgram = new GLProgram ("Shaders/OnScreenShader.vsh", "Shaders/OnScreenShader.fsh");
 			onScreenProgram.Link ();
 			onScreenProgram.AddUniform ("matrix");
@@ -468,9 +433,6 @@ namespace Frax2
 		{
 			image.UserInteractionEnabled = true;
 
-			var rotationGesture = new UIRotationGestureRecognizer (RotateImage);
-			image.AddGestureRecognizer (rotationGesture);
-
 			var pinchGesture = new UIPinchGestureRecognizer (ScaleImage);
 			image.AddGestureRecognizer (pinchGesture);
 
@@ -478,28 +440,18 @@ namespace Frax2
 			panGesture.MaximumNumberOfTouches = 2;
 			image.AddGestureRecognizer (panGesture);
 
-			//var longPressGesture = new UILongPressGestureRecognizer (ResetImage);
-			//image.AddGestureRecognizer (longPressGesture);
+			var longPressGesture = new UILongPressGestureRecognizer (RecenterImage);
+			image.AddGestureRecognizer (longPressGesture);
 		}
 
-		void ResetImage (UILongPressGestureRecognizer gesture) 
+		void RecenterImage (UILongPressGestureRecognizer gesture) 
 		{
 			if (gesture.State == UIGestureRecognizerState.Began) {
 				ResetPosition ();
 				curIter = 0.0f;
 			}
 		}
-
-		void RotateImage (UIRotationGestureRecognizer gesture)
-		{
-			if (gesture.State == UIGestureRecognizerState.Began || gesture.State == UIGestureRecognizerState.Changed) {
-				rotation += gesture.Rotation;
-				// Reset the gesture recognizer's rotation - the next callback will get a delta from the current rotation.
-				gesture.Rotation = 0;
-				curIter = 0.0f;
-			}
-		}
-
+			
 
 		void PanImage (UIPanGestureRecognizer gesture)
 		{
@@ -520,39 +472,12 @@ namespace Frax2
 		void ScaleImage (UIPinchGestureRecognizer gesture)
 		{
 			if (gesture.State == UIGestureRecognizerState.Began || gesture.State == UIGestureRecognizerState.Changed) {
-				var loc = gesture.LocationInView (View);
-				var oldScaleFactor = scaleFactor;
 				scaleFactor /= gesture.Scale;
 				curIter = 0.0f;
-				//transX += loc.X*(oldScaleFactor - scaleFactor);;
-				//transY += (View.Frame.Height - loc.Y)*(oldScaleFactor - scaleFactor);
 				// Reset the gesture recognizer's scale - the next callback will get a delta from the current scale.
 				gesture.Scale = 1;
 				System.Console.WriteLine ("Pinching: (scale)=" + gesture.Scale);
 			}
-		}
-
-		public class Toolbar : UIToolbar {
-
-			public UIBarButtonItem barBtn;
-
-			public Toolbar(RectangleF rect)
-			{
-				barBtn = new UIBarButtonItem (new UIImage("timer-32.png"), UIBarButtonItemStyle.Plain, ClickAction);
-					
-				Frame = new RectangleF(0, rect.Bottom - 44, rect.Width, 44); 
-				Items = new UIBarButtonItem[] {barBtn};
-
-			}
-
-			void ClickAction(object o, EventArgs EventArgs) {
-				Console.WriteLine ("Button clicked");
-				var settingsUI = new SettingsUI ();
-				UIPopoverController popover = new UIPopoverController (settingsUI.navigation);
-				popover.PopoverContentSize = new SizeF (400, 600);
-				popover.PresentFromBarButtonItem (barBtn, UIPopoverArrowDirection.Any, true);
-			}
-
 		}
 	}
 

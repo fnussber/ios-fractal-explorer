@@ -5,7 +5,7 @@ using System.Linq;
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
 
-namespace Frax2
+namespace Fractals
 {
 	public class Application
 	{

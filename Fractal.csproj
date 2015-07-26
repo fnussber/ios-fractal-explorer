@@ -103,7 +103,6 @@
     <Compile Include="GLProgram.cs" />
     <Compile Include="ShaderProgram.cs" />
     <Compile Include="GLFramebuffer.cs" />
-    <Compile Include="Settings.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.MonoTouch.CSharp.targets" />
   <ItemGroup>
@@ -118,8 +117,5 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />
-    <Content Include="Settings.plist">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>
