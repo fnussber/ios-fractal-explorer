@@ -112,7 +112,6 @@
     <BundleResource Include="Shaders\OnScreenShader.fsh" />
     <BundleResource Include="Shaders\OnScreenShader.vsh" />
     <BundleResource Include="Shaders\SetupShader.vsh" />
-    <BundleResource Include="Shaders\colorsBlueTexture.png" />
     <BundleResource Include="Resources\timer-32.png" />
   </ItemGroup>
   <ItemGroup>

@@ -43,7 +43,6 @@ namespace Fractals
 
 		Stopwatch stopwatch = new Stopwatch();
 		uint colorTextureId;
-		uint colorBlueTextureId;
 
 		GLFramebuffer fBuffer0Approx = null;
 		GLFramebuffer fBuffer1Approx = null;
@@ -357,7 +356,6 @@ namespace Fractals
 		void SetupPrograms ()
 		{
 			colorTextureId     = LoadTexture ("Shaders/colorsTexture.png");
-			colorBlueTextureId = LoadTexture ("Shaders/colorsBlueTexture.png");
 
 			// ---------- Program for first pass: set everything up
 			setupProgram = new GLProgram ("Shaders/SetupShader.vsh", "Shaders/SetupShader.fsh");
