@@ -97,12 +97,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
-    <Compile Include="FracViewController.cs" />
     <Compile Include="AppDelegate.cs" />
     <Compile Include="GLCommon.cs" />
     <Compile Include="GLProgram.cs" />
-    <Compile Include="ShaderProgram.cs" />
     <Compile Include="GLFramebuffer.cs" />
+    <Compile Include="FractalViewController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.MonoTouch.CSharp.targets" />
   <ItemGroup>
@@ -112,7 +111,6 @@
     <BundleResource Include="Shaders\OnScreenShader.fsh" />
     <BundleResource Include="Shaders\OnScreenShader.vsh" />
     <BundleResource Include="Shaders\SetupShader.vsh" />
-    <BundleResource Include="Resources\timer-32.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\colorsTexture.png" />

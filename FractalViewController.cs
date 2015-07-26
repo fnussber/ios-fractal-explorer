@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 
 namespace Fractals
 {
-	public class FracViewController : GLKViewController
+	public class FractalViewController : GLKViewController
 	{
 		// vertices
 		static readonly float[] vertices = {
@@ -61,7 +61,7 @@ namespace Fractals
 		EAGLContext context;
 		GLKView glkView;
 
-		public FracViewController ()
+		public FractalViewController ()
 		{
 		}
 

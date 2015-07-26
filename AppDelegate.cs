@@ -29,7 +29,7 @@ namespace Fractals
 			window = new UIWindow (UIScreen.MainScreen.Bounds);
 			
 			// If you have defined a root view controller, set it here:
-			window.RootViewController = new FracViewController ();
+			window.RootViewController = new FractalViewController ();
 			
 			// make the window visible
 			window.MakeKeyAndVisible ();
