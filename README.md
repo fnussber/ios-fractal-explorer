@@ -12,7 +12,7 @@ I am sure there is a lot that could be done to optimize this code, but the main 
 
 ## Demo Video
 
-See a demo video on [youtube](http://youtu.be/NVUj5CVOuwY).
+See a demo video on [youtube](https://youtu.be/ZYm3Y4aBBGw).
 
 ## Credits
 Some of the more general OpenGL functionality is based on this [code](https://github.com/xamarin/monotouch-samples/tree/master/OpenGL/OpenGLES20Example).
