@@ -21,7 +21,7 @@ void main()
     } else if (iter.z < prev.z) {
     	// less iterations calculated than for preview, take preview value
         i = prev.z;
-	} else {
+    } else {
         // better than preview but still more iterations needed
         // for now assume that we'll hit the maximum
         i = maxIterations;
