@@ -118,12 +118,12 @@ namespace Fractals
 				fBuffer1.Delete();
 
 			// create new framebuffers with appropriate dimensions
-			float oversampling   = 1.0f;
-			float approxsampling = 0.125f;
-			fBuffer0Preview = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
-			fBuffer1Preview = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
-			fBuffer0        = new GLFramebuffer (View.Frame.Width * oversampling,   View.Frame.Height * oversampling);
-			fBuffer1        = new GLFramebuffer (View.Frame.Width * oversampling,   View.Frame.Height * oversampling);
+			float oversampling    = 1.0f;	// use factor > 1.0 for oversampling for better image quality at a slower speed
+			float previewsampling = 0.125f; // undersampling for preview
+			fBuffer0Preview = new GLFramebuffer (View.Frame.Width * previewsampling, View.Frame.Height * previewsampling);
+			fBuffer1Preview = new GLFramebuffer (View.Frame.Width * previewsampling, View.Frame.Height * previewsampling);
+			fBuffer0        = new GLFramebuffer (View.Frame.Width * oversampling,    View.Frame.Height * oversampling);
+			fBuffer1        = new GLFramebuffer (View.Frame.Width * oversampling,    View.Frame.Height * oversampling);
 
 			// reset iterations
 			curIter = 0.0f;
@@ -329,12 +329,12 @@ namespace Fractals
 
 		void UpdateLabels (float[] matrix)
 		{
-			var upperLeft = GLCommon.MatrixVectorMultiply (matrix, new float[4] { -1.0f, 1.0f, 0.0f, 1.0f });
+			var upperLeft  = GLCommon.MatrixVectorMultiply (matrix, new float[4] { -1.0f, 1.0f, 0.0f, 1.0f });
 			var lowerRight = GLCommon.MatrixVectorMultiply (matrix, new float[4] { 1.0f, -1.0f, 0.0f, 1.0f });
 
 			reLabel.setText ((upperLeft [0] + lowerRight [0]) / 2.0f);
 			imLabel.setText ((upperLeft [1] + lowerRight [1]) / 2.0f);
-			scaleLabel.setText (2.0f / (lowerRight [0] - upperLeft [0]));
+			scaleLabel.setText (2.0f / scaleFactor);
 			iterationsLabel.setText (curIter);
 		}
 
