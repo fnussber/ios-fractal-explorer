@@ -1,6 +1,6 @@
 ﻿precision highp float;
 
-uniform highp sampler2D inValues;
+uniform highp sampler2D iterate;
 uniform highp float iterations;
 
 varying highp vec2 c0;
@@ -9,10 +9,10 @@ varying highp vec2 t0;
 void main()
 {
 	// claim our last result (i.e. current z and iteration count)
-    vec4 inVals = texture2D(inValues, t0);
+    vec4 iter = texture2D(iterate, t0);
 
     // init c and z accordingly
-    vec2 z = c0 + inVals.xy;
+    vec2 z = c0 + iter.xy;
  
 	// calculate the next series of steps
     float i;
@@ -28,7 +28,6 @@ void main()
 
     // store difference between c0 and current z value and iteration count
     gl_FragColor.xy = z - c0;
-    gl_FragColor.z  = inVals.z + i;
-    gl_FragColor.w  = i;
+    gl_FragColor.z  = iter.z + i;
 
 }

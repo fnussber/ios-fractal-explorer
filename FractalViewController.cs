@@ -44,12 +44,11 @@ namespace Fractals
 		Stopwatch stopwatch = new Stopwatch();
 		uint colorTextureId;
 
-		GLFramebuffer fBuffer0Approx = null;
-		GLFramebuffer fBuffer1Approx = null;
+		GLFramebuffer fBuffer0Preview = null;
+		GLFramebuffer fBuffer1Preview = null;
 		GLFramebuffer fBuffer0 = null;
 		GLFramebuffer fBuffer1 = null;
 
-		static int   pass    = 0;
 		static float curIter = 0.0f;
 		static float steps   = 10.0f;
 		static float maxIter = 1000.0f;
@@ -109,22 +108,22 @@ namespace Fractals
 		void ResetImage()
 		{
 			// delete existing framebuffers (if any)
-			if (fBuffer0Approx != null)
-				fBuffer0Approx.Delete();
-			if (fBuffer1Approx != null)
-				fBuffer1Approx.Delete();
+			if (fBuffer0Preview != null)
+				fBuffer0Preview.Delete();
+			if (fBuffer1Preview != null)
+				fBuffer1Preview.Delete();
 			if (fBuffer0 != null)
 				fBuffer0.Delete();
 			if (fBuffer1 != null)
 				fBuffer1.Delete();
 
 			// create new framebuffers with appropriate dimensions
-			float oversampling = 1.0f;
+			float oversampling   = 1.0f;
 			float approxsampling = 0.125f;
-			fBuffer0Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
-			fBuffer1Approx = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
-			fBuffer0       = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
-			fBuffer1       = new GLFramebuffer (View.Frame.Width * oversampling, View.Frame.Height * oversampling);
+			fBuffer0Preview = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
+			fBuffer1Preview = new GLFramebuffer (View.Frame.Width * approxsampling, View.Frame.Height * approxsampling);
+			fBuffer0        = new GLFramebuffer (View.Frame.Width * oversampling,   View.Frame.Height * oversampling);
+			fBuffer1        = new GLFramebuffer (View.Frame.Width * oversampling,   View.Frame.Height * oversampling);
 
 			// reset iterations
 			curIter = 0.0f;
@@ -160,24 +159,19 @@ namespace Fractals
 				float[] matrix = UpdatePosition ();
 
 				if (curIter == 0.0f) {
-					pass = 0;
-					SetupApproximation (matrix);
+					SetupPreview (matrix);
 					SetupIterations (matrix);
 				}
 
-				if (pass % 2 == 0)
+				if ((curIter/steps) % 2 == 0) {
 					RunIterations (matrix, fBuffer1, fBuffer0);
-				else 
+					DrawIterations (matrix, fBuffer0);
+				} else { 
 					RunIterations (matrix, fBuffer0, fBuffer1);
+					DrawIterations (matrix, fBuffer1);
+				}
 
 				curIter += steps;
-				pass++;
-
-				if (pass % 2 == 0)
-					DrawIterations (matrix, fBuffer0);
-				else
-					DrawIterations (matrix, fBuffer1);
-
 				UpdateLabels (matrix);
 
 				System.Console.WriteLine ("Total time for drawing cycle " + stopwatch.ElapsedMilliseconds + "ms");
@@ -185,14 +179,10 @@ namespace Fractals
 
 		}
 
-		void SetupApproximation (float[] matrix)
+		void SetupPreview (float[] matrix)
 		{
 			// reset
-			fBuffer0Approx.Use ();
-
-			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
-			GL.Clear (ClearBufferMask.ColorBufferBit);
-
+			fBuffer0Preview.Use ();
 			setupProgram.Use ();
 			int attrPosition0 = GL.GetAttribLocation (setupProgram.Id(), "position");
 			GL.VertexAttribPointer (attrPosition0, 2, VertexAttribPointerType.Float, false, 0, vertices);
@@ -201,11 +191,7 @@ namespace Fractals
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
 
 			// calculate
-			fBuffer1Approx.Use ();
-
-//			GL.ClearColor (0.5f, 0.5f, 0.5f, 1.0f);
-//			GL.Clear (ClearBufferMask.ColorBufferBit);
-
+			fBuffer1Preview.Use ();
 			iterationsProgram.Use ();
 			int attrPosition = GL.GetAttribLocation (iterationsProgram.Id(), "position");
 			int attrTexture  = GL.GetAttribLocation (iterationsProgram.Id(), "texture");
@@ -216,11 +202,11 @@ namespace Fractals
 
 			// bind a texture to the texture register 0
 			GL.ActiveTexture (TextureUnit.Texture0);
-			GL.BindTexture (TextureTarget.Texture2D, fBuffer0Approx.TextureId);
+			GL.BindTexture (TextureTarget.Texture2D, fBuffer0Preview.TextureId);
 
 			// low resulotion but full iteration count!
-			iterationsProgram.SetUniform ("iterations", maxIter/3);
-			iterationsProgram.SetUniform ("inValues", 0);
+			iterationsProgram.SetUniform ("iterations", maxIter);
+			iterationsProgram.SetUniform ("iterate", 0);
 			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
@@ -270,7 +256,7 @@ namespace Fractals
 			GL.BindTexture (TextureTarget.Texture2D, fobIn.TextureId);
 
 			iterationsProgram.SetUniform ("iterations", steps);
-			iterationsProgram.SetUniform ("inValues", 0);
+			iterationsProgram.SetUniform ("iterate", 0);
 			iterationsProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
@@ -303,14 +289,14 @@ namespace Fractals
 			GL.ActiveTexture (TextureUnit.Texture1);
 			GL.BindTexture (TextureTarget.Texture2D, fobIn.TextureId);
 			GL.ActiveTexture (TextureUnit.Texture2);
-			GL.BindTexture (TextureTarget.Texture2D, fBuffer1Approx.TextureId);
+			GL.BindTexture (TextureTarget.Texture2D, fBuffer1Preview.TextureId);
 
 			// assign the texture slot to use to the uniform input params
 			onScreenProgram.SetUniform ("maxIterations", maxIter);
 			onScreenProgram.SetUniform ("curIterations", curIter);
 			onScreenProgram.SetUniform ("coltx", 0);
-			onScreenProgram.SetUniform ("inValues", 1);
-			onScreenProgram.SetUniform ("approx", 2);
+			onScreenProgram.SetUniform ("iterate", 1);
+			onScreenProgram.SetUniform ("preview", 2);
 			onScreenProgram.SetUniformMatrix ("matrix", matrix);
 
 			GL.DrawArrays (BeginMode.TriangleStrip, 0, 4);
@@ -367,18 +353,18 @@ namespace Fractals
 			iterationsProgram = new GLProgram ("Shaders/OffScreenShader.vsh", "Shaders/OffScreenShader.fsh");
 			iterationsProgram.Link ();
 			iterationsProgram.AddUniform ("matrix");
-			iterationsProgram.AddUniform ("inValues");
+			iterationsProgram.AddUniform ("iterate");
 			iterationsProgram.AddUniform ("iterations");
 
 			// ---------- Program for drawing the current result texture
 			onScreenProgram = new GLProgram ("Shaders/OnScreenShader.vsh", "Shaders/OnScreenShader.fsh");
 			onScreenProgram.Link ();
 			onScreenProgram.AddUniform ("matrix");
-			onScreenProgram.AddUniform ("inValues");
+			onScreenProgram.AddUniform ("iterate");
 			onScreenProgram.AddUniform ("maxIterations");
 			onScreenProgram.AddUniform ("curIterations");
 			onScreenProgram.AddUniform ("coltx");
-			onScreenProgram.AddUniform ("approx");
+			onScreenProgram.AddUniform ("preview");
 		}
 
 

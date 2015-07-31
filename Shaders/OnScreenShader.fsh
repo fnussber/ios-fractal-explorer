@@ -1,45 +1,37 @@
 ﻿precision highp float;
 
-uniform highp sampler2D approx;
-uniform highp sampler2D inValues;
-uniform lowp sampler2D coltx;
+uniform highp sampler2D preview;
+uniform highp sampler2D iterate;
+uniform lowp  sampler2D coltx;
 uniform highp float curIterations;
 uniform highp float maxIterations;
 
-varying highp vec2 c0;
 varying highp vec2 t0;
 
 void main()
 {
-    vec4 inVals = texture2D(inValues, t0);
-    vec4 approxz = texture2D(approx, t0);
+    vec4 iter = texture2D(iterate, t0);
+    vec4 prev = texture2D(preview, t0);
 
     // check if done
-    float z;
-    if (inVals.w == 0.0) {
-    	// this point is fully evaluated
-    	z = inVals.z;
-    } else if (inVals.z > approxz.z) {
-        z = inVals.z >= curIterations ? maxIterations : inVals.z;
-    } else {
-		z = approxz.z >= maxIterations/3.0 ? maxIterations : approxz.z;
+    float i;
+    if (iter.z < curIterations) {
+    	// iterations have reached maximum for this point, we have the final value
+    	i = iter.z;
+    } else if (iter.z < prev.z) {
+    	// less iterations calculated than for preview, take preview value
+		i = prev.z;
+	} else {
+		// better than preview but still more iterations needed
+		// for now assume that we'll hit the maximum
+        i = maxIterations;
 	}
 
-
-    // fun crazy coloring A
-//    if (inVals.z < maxIterations) {
-//    	float zn = sqrt(inVals.x*inVals.x + inVals.y*inVals.y);
-//    	float nu = log(log(zn) / log(2.0)) / log(2.0);
-//    	float it = inVals.z + 1.0 - nu;
-//    	gl_FragColor = texture2D(coltx, vec2(it, 0.0));
-//    } else {
-//    	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-//    }
-
-//    float z = inVals.z;
-    if (z < maxIterations) {
-    	gl_FragColor = texture2D(coltx, vec2(z / 100.0, 0.0));
+    if (i < maxIterations) {
+    	// get color for i iterations from color texture
+    	gl_FragColor = texture2D(coltx, vec2(i / 100.0, 0.0));
     } else {
+    	// if i is >= max iterations color is black
     	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
 
