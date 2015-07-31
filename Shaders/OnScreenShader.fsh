@@ -20,12 +20,12 @@ void main()
     	i = iter.z;
     } else if (iter.z < prev.z) {
     	// less iterations calculated than for preview, take preview value
-		i = prev.z;
+        i = prev.z;
 	} else {
-		// better than preview but still more iterations needed
-		// for now assume that we'll hit the maximum
+        // better than preview but still more iterations needed
+        // for now assume that we'll hit the maximum
         i = maxIterations;
-	}
+    }
 
     if (i < maxIterations) {
     	// get color for i iterations from color texture
